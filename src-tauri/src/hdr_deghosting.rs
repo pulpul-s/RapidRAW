@@ -119,14 +119,6 @@ pub fn align_hdr_frames(frames: &mut [HdrFrame], app_handle: &AppHandle) {
             detect_frame_features(&frame.1, &brief_pairs, &label, is_raw_file(&frame.0))
         })
         .collect();
-    for (index, detection) in detections.iter().enumerate() {
-        println!(
-            "[deghost] frame '{}': {} features (reference={})",
-            frames[index].0,
-            detection.features.len(),
-            index == reference_index
-        );
-    }
     for index in 0..frames.len() {
         if index == reference_index {
             continue;
@@ -144,12 +136,9 @@ pub fn align_hdr_frames(frames: &mut [HdrFrame], app_handle: &AppHandle) {
         );
         match outcome {
             AlignmentOutcome::Warped(warped) => {
-                println!("[deghost] '{}' warped to reference", file_name);
                 frames[index].1 = DynamicImage::ImageRgb32F(warped);
             }
-            AlignmentOutcome::AlreadyAligned => {
-                println!("[deghost] '{}' already aligned, skipping warp", file_name);
-            }
+            AlignmentOutcome::AlreadyAligned => {}
             AlignmentOutcome::Failed => {
                 let _ = app_handle.emit(
                     "hdr-progress",
@@ -202,28 +191,12 @@ fn detect_frame_features(
     }
 }
 
-fn debug_dump_normalized(label: &str, normalized: &GrayImage) {
-    let path = std::env::temp_dir().join(format!("rapidraw_deghost_{}.png", label));
-    match normalized.save(&path) {
-        Ok(()) => println!("[deghost] normalized image written to {}", path.display()),
-        Err(e) => println!(
-            "[deghost] failed to write normalized image for '{}': {}",
-            label, e
-        ),
-    }
-}
-
 fn align_frame_to_reference(
     frame_image: &DynamicImage,
     frame: &FrameDetection,
     reference: &FrameDetection,
 ) -> AlignmentOutcome {
     let matches = processing::match_features(&reference.features, &frame.features);
-    println!(
-        "[deghost] matches against reference: {} (threshold {})",
-        matches.len(),
-        processing::MIN_INLIERS_FOR_CONNECTION
-    );
     if matches.len() < processing::MIN_INLIERS_FOR_CONNECTION {
         return AlignmentOutcome::Failed;
     }
@@ -234,18 +207,12 @@ fn align_frame_to_reference(
     ) {
         Some(result) => result,
         None => {
-            println!("[deghost] RANSAC found too few inliers");
             return AlignmentOutcome::Failed;
         }
     };
-    println!("[deghost] inliers: {}", inliers.len());
     let rigid_full = estimate_rigid_transform(&inliers, reference, frame);
     let (width, height) = frame_image.dimensions();
     let displacement = max_corner_displacement(&rigid_full, width, height);
-    println!(
-        "[deghost] rigid max corner displacement: {:.3} px",
-        displacement
-    );
     if displacement < DEGHOST_IDENTITY_MAX_DISPLACEMENT {
         return AlignmentOutcome::AlreadyAligned;
     }
