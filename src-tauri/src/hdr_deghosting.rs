@@ -8,7 +8,7 @@ use crate::image_processing::{
 use crate::panorama_stitching::{Feature, KeyPoint, Match};
 use crate::panorama_utils::{processing, stitching};
 use image::{DynamicImage, GenericImageView, GrayImage, Rgb32FImage};
-use nalgebra::{Matrix3, Point2};
+use nalgebra::{Matrix2, Matrix3, Point2};
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
@@ -230,58 +230,107 @@ fn align_frame_to_reference(
             }
         };
     println!("[deghost] inliers: {}", inliers.len());
-    let (dx_small, dy_small) = median_translation(&inliers, reference, frame);
-    let dx_full = dx_small * frame.scale_factor;
-    let dy_full = dy_small * frame.scale_factor;
-    let displacement = (dx_full * dx_full + dy_full * dy_full).sqrt();
-    println!(
-        "[deghost] estimated translation: ({:.2}, {:.2}) px, magnitude {:.2}",
-        dx_full, dy_full, displacement
-    );
+    let rigid_full = estimate_rigid_transform(&inliers, reference, frame);
+    let (width, height) = frame_image.dimensions();
+    let displacement = max_corner_displacement(&rigid_full, width, height);
+    println!("[deghost] rigid max corner displacement: {:.3} px", displacement);
     if displacement < DEGHOST_IDENTITY_MAX_DISPLACEMENT {
         return AlignmentOutcome::AlreadyAligned;
     }
-    let translation = translation_matrix(dx_full, dy_full);
     let source = frame_image.to_rgb32f();
-    let (width, height) = frame_image.dimensions();
     AlignmentOutcome::Warped(stitching::warp_image_homography(
         &source,
-        &translation,
+        &rigid_full,
         width,
         height,
     ))
 }
 
-fn median_translation(
+fn estimate_rigid_transform(
     inliers: &[Match],
     reference: &FrameDetection,
     frame: &FrameDetection,
-) -> (f64, f64) {
-    assert!(!inliers.is_empty(), "translation requires inlier matches");
-    let mut horizontal: Vec<f64> = Vec::with_capacity(inliers.len());
-    let mut vertical: Vec<f64> = Vec::with_capacity(inliers.len());
-    for m in inliers {
-        let reference_point = reference.keypoints[m.index1];
-        let frame_point = frame.keypoints[m.index2];
-        horizontal.push(frame_point.x as f64 - reference_point.x as f64);
-        vertical.push(frame_point.y as f64 - reference_point.y as f64);
+) -> Matrix3<f64> {
+    assert!(inliers.len() >= 2, "rigid estimate requires at least two inliers");
+    let pairs: Vec<((f64, f64), (f64, f64))> = inliers
+        .iter()
+        .map(|m| {
+            let r = reference.keypoints[m.index1];
+            let f = frame.keypoints[m.index2];
+            ((r.x as f64, r.y as f64), (f.x as f64, f.y as f64))
+        })
+        .collect();
+    let count = pairs.len() as f64;
+    let reference_centroid = centroid(pairs.iter().map(|(r, _)| *r), count);
+    let frame_centroid = centroid(pairs.iter().map(|(_, f)| *f), count);
+    let (mut h00, mut h01, mut h10, mut h11) = (0.0, 0.0, 0.0, 0.0);
+    for ((rx, ry), (fx, fy)) in &pairs {
+        let ax = rx - reference_centroid.0;
+        let ay = ry - reference_centroid.1;
+        let bx = fx - frame_centroid.0;
+        let by = fy - frame_centroid.1;
+        h00 += ax * bx;
+        h01 += ax * by;
+        h10 += ay * bx;
+        h11 += ay * by;
     }
-    (median(&mut horizontal), median(&mut vertical))
+    let covariance = Matrix2::new(h00, h01, h10, h11);
+    let svd = covariance.svd(true, true);
+    let u = svd.u.expect("svd failed to produce u");
+    let v = svd.v_t.expect("svd failed to produce v_t").transpose();
+    let mut rotation = v * u.transpose();
+    if rotation.determinant() < 0.0 {
+        let mut corrected = v;
+        corrected[(0, 1)] = -corrected[(0, 1)];
+        corrected[(1, 1)] = -corrected[(1, 1)];
+        rotation = corrected * u.transpose();
+    }
+    let tx = frame_centroid.0
+        - (rotation[(0, 0)] * reference_centroid.0 + rotation[(0, 1)] * reference_centroid.1);
+    let ty = frame_centroid.1
+        - (rotation[(1, 0)] * reference_centroid.0 + rotation[(1, 1)] * reference_centroid.1);
+    Matrix3::new(
+        rotation[(0, 0)],
+        rotation[(0, 1)],
+        tx * frame.scale_factor,
+        rotation[(1, 0)],
+        rotation[(1, 1)],
+        ty * frame.scale_factor,
+        0.0,
+        0.0,
+        1.0,
+    )
 }
 
-fn median(values: &mut [f64]) -> f64 {
-    assert!(!values.is_empty(), "median requires at least one value");
-    values.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let middle = values.len() / 2;
-    if values.len() % 2 == 0 {
-        (values[middle - 1] + values[middle]) / 2.0
-    } else {
-        values[middle]
+fn centroid(points: impl Iterator<Item = (f64, f64)>, count: f64) -> (f64, f64) {
+    assert!(count > 0.0, "centroid requires a positive count");
+    let mut sum = (0.0, 0.0);
+    for (x, y) in points {
+        sum.0 += x;
+        sum.1 += y;
     }
+    (sum.0 / count, sum.1 / count)
 }
 
-fn translation_matrix(dx: f64, dy: f64) -> Matrix3<f64> {
-    Matrix3::new(1.0, 0.0, dx, 0.0, 1.0, dy, 0.0, 0.0, 1.0)
+fn max_corner_displacement(transform: &Matrix3<f64>, width: u32, height: u32) -> f64 {
+    let corners = [
+        (0.0, 0.0),
+        (width as f64, 0.0),
+        (0.0, height as f64),
+        (width as f64, height as f64),
+    ];
+    let mut max_displacement = 0.0;
+    for (x, y) in corners {
+        let mapped_x = transform[(0, 0)] * x + transform[(0, 1)] * y + transform[(0, 2)];
+        let mapped_y = transform[(1, 0)] * x + transform[(1, 1)] * y + transform[(1, 2)];
+        let dx = mapped_x - x;
+        let dy = mapped_y - y;
+        let displacement = (dx * dx + dy * dy).sqrt();
+        if displacement > max_displacement {
+            max_displacement = displacement;
+        }
+    }
+    max_displacement
 }
 
 #[cfg(test)]
@@ -332,6 +381,53 @@ mod align_hdr_frames_tests {
         }
         let mean_error = error / (160.0 * 160.0);
         assert!(mean_error < 0.1, "mean realignment error too high: {}", mean_error);
+    }
+
+    #[test]
+    fn rigid_estimate_recovers_known_rotation_and_translation() {
+        use crate::panorama_stitching::{KeyPoint, Match};
+        let angle = 0.03_f64;
+        let (sin, cos) = angle.sin_cos();
+        let (tx, ty) = (4.0, -3.0);
+        let mut reference_keypoints = Vec::new();
+        let mut frame_keypoints = Vec::new();
+        let mut matches = Vec::new();
+        for grid_y in 0..5 {
+            for grid_x in 0..5 {
+                let rx = 20.0 + grid_x as f64 * 60.0;
+                let ry = 20.0 + grid_y as f64 * 60.0;
+                let fx = cos * rx - sin * ry + tx;
+                let fy = sin * rx + cos * ry + ty;
+                let index = reference_keypoints.len();
+                reference_keypoints.push(KeyPoint {
+                    x: rx.round() as u32,
+                    y: ry.round() as u32,
+                });
+                frame_keypoints.push(KeyPoint {
+                    x: fx.round() as u32,
+                    y: fy.round() as u32,
+                });
+                matches.push(Match {
+                    index1: index,
+                    index2: index,
+                });
+            }
+        }
+        let reference = super::FrameDetection {
+            keypoints: reference_keypoints,
+            features: Vec::new(),
+            scale_factor: 1.0,
+        };
+        let frame = super::FrameDetection {
+            keypoints: frame_keypoints,
+            features: Vec::new(),
+            scale_factor: 1.0,
+        };
+        let rigid = super::estimate_rigid_transform(&matches, &reference, &frame);
+        let recovered_angle = rigid[(1, 0)].atan2(rigid[(0, 0)]);
+        assert!((recovered_angle - angle).abs() < 0.005, "angle off: {}", recovered_angle);
+        assert!((rigid[(0, 2)] - tx).abs() < 1.0, "tx off: {}", rigid[(0, 2)]);
+        assert!((rigid[(1, 2)] - ty).abs() < 1.0, "ty off: {}", rigid[(1, 2)]);
     }
 
     #[test]
