@@ -2201,7 +2201,6 @@ export default function SettingsPanel({
                                       colorInput: 'transparent',
                                       colorForeground: 'inherit',
                                       colorInputForeground: 'inherit',
-                                      colorTextOnPrimaryBackground: 'inherit',
                                       colorPrimaryForeground: 'inherit',
                                       colorBorder: 'transparent',
                                       colorShadow: 'none',

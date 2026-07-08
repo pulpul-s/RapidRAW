@@ -2513,8 +2513,8 @@ const ImageCanvas = memo(
               }}
             >
               <ReactCrop
-                aspect={adjustments.aspectRatio}
-                crop={crop}
+                aspect={adjustments.aspectRatio ?? undefined}
+                crop={crop ?? undefined}
                 onChange={setCrop}
                 onComplete={handleCropComplete}
                 ruleOfThirds={false}
