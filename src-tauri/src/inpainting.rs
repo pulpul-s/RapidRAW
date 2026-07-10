@@ -93,11 +93,11 @@ pub async fn generate_manual_cleanup_patch(
     let mut is_heal = false;
     if let Some(arr) = sub_masks_val.as_array() {
         for sm in arr {
-            if let Some(t) = sm.get("type").and_then(|v| v.as_str()) {
-                if t.eq_ignore_ascii_case("heal") {
-                    is_heal = true;
-                    break;
-                }
+            if let Some(t) = sm.get("type").and_then(|v| v.as_str())
+                && t.eq_ignore_ascii_case("heal")
+            {
+                is_heal = true;
+                break;
             }
         }
     }
@@ -133,10 +133,13 @@ pub async fn generate_manual_cleanup_patch(
                 let img_x = min_x as i32 + x as i32 - 1;
                 let img_y = min_y as i32 + y as i32 - 1;
 
-                if img_x >= 0 && img_x < img_w as i32 && img_y >= 0 && img_y < img_h as i32 {
-                    if mask_bitmap.get_pixel(img_x as u32, img_y as u32)[0] > 0 {
-                        region[y * bw + x] = 1;
-                    }
+                if img_x >= 0
+                    && img_x < img_w as i32
+                    && img_y >= 0
+                    && img_y < img_h as i32
+                    && mask_bitmap.get_pixel(img_x as u32, img_y as u32)[0] > 0
+                {
+                    region[y * bw + x] = 1;
                 }
             }
         }
