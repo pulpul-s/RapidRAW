@@ -697,13 +697,18 @@ fn export_adjustments_as_lut(
     convert_image_to_cube_lut(&processed_lut, lut_size)
 }
 
-struct export_handle_guard {
+struct ExportHandleGuide {
     app_handle: tauri::AppHandle,
 }
 
-impl Drop for export_handle_guard {
+impl Drop for ExportHandleGuide {
     fn drop(&mut self) {
-        if let Ok(mut handle_lock) = self.app_handle.state::<AppState>().export_task_handle.lock() {
+        if let Ok(mut handle_lock) = self
+            .app_handle
+            .state::<AppState>()
+            .export_task_handle
+            .lock()
+        {
             *handle_lock = None;
         }
     }
