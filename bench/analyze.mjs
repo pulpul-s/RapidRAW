@@ -10,6 +10,15 @@ import { readFileSync } from 'node:fs';
 const START_MARKER = 'BENCH_RESULT_JSON_START';
 const END_MARKER = 'BENCH_RESULT_JSON_END';
 
+const PHASES = ['scroll', 'open', 'edit'];
+const METRICS = [
+  ['durationMs', 'ms', false],
+  ['avgFps', 'fps', true],
+  ['worstFrameMs', 'ms', false],
+  ['droppedFrameCount', '', false],
+  ['droppedFrameTimeMs', 'ms', false],
+];
+
 // Tolerate pasting the raw devtools console pane instead of just the JSON:
 // strips "[Log] " prefixes, "(file.ts, line N)" source-location suffixes
 // devtools appends to each log line, and REPL echo lines (e.g. the
@@ -54,30 +63,57 @@ function pct(a, b) {
   return `${(((b - a) / a) * 100).toFixed(1)}%`.replace(/^(?!-)/, '+');
 }
 
+function fmt(v, unit) {
+  return `${v.toFixed(1)}${unit ? ' ' + unit : ''}`;
+}
+
 function reportSingle(path, r) {
   console.log(`=== ${path}`);
   console.log(`  user agent: ${r.userAgent}`);
-  console.log(`  total wall-clock: ${r.totalMs.toFixed(1)}ms`);
-  console.log(`  frames: ${r.frames.frameCount}, avg fps: ${r.frames.avgFps.toFixed(1)}`);
-  console.log(
-    `  dropped frames (>16.7ms): ${r.frames.droppedFrameCount}, total ${r.frames.droppedFrameTimeMs.toFixed(1)}ms, worst ${r.frames.worstFrameMs.toFixed(1)}ms`,
-  );
+  const vp = r.viewport;
+  console.log(`  viewport: ${vp.width}x${vp.height} @ dpr ${vp.devicePixelRatio}`);
+  const n = r.iterations.filter((it) => !it.warmup).length;
+  console.log(`  measured iterations: ${n} (+ ${r.config.warmupIterations} warmup, discarded)`);
+  for (const phase of PHASES) {
+    console.log(`  [${phase}]`);
+    for (const [metric, unit] of METRICS) {
+      const s = r.summary[phase][metric];
+      console.log(
+        `    ${metric}: median ${fmt(s.median, unit)}, p95 ${fmt(s.p95, unit)}, stdev ${fmt(s.stdev, unit)}`,
+      );
+    }
+  }
   console.log();
+}
+
+function checkEnvironmentMatch(pathA, a, pathB, b) {
+  const va = a.viewport;
+  const vb = b.viewport;
+  if (va.width !== vb.width || va.height !== vb.height || va.devicePixelRatio !== vb.devicePixelRatio) {
+    console.log(
+      `WARNING: viewport differs between runs (${pathA}: ${va.width}x${va.height}@${va.devicePixelRatio} vs ` +
+        `${pathB}: ${vb.width}x${vb.height}@${vb.devicePixelRatio}). Slider pixel-deltas map to different ` +
+        `value-deltas at different sizes -- these results are not comparable. Re-run both at the same window size.`,
+    );
+    console.log();
+  }
 }
 
 function reportDiff(pathA, a, pathB, b) {
   reportSingle(pathA, a);
   reportSingle(pathB, b);
-  console.log('=== diff (before -> after)');
-  const rows = [
-    ['total wall-clock (ms)', a.totalMs, b.totalMs],
-    ['avg fps', a.frames.avgFps, b.frames.avgFps],
-    ['dropped-frame count', a.frames.droppedFrameCount, b.frames.droppedFrameCount],
-    ['dropped-frame time (ms)', a.frames.droppedFrameTimeMs, b.frames.droppedFrameTimeMs],
-    ['worst frame (ms)', a.frames.worstFrameMs, b.frames.worstFrameMs],
-  ];
-  for (const [label, av, bv] of rows) {
-    console.log(`  ${label}: ${av.toFixed(1)} -> ${bv.toFixed(1)}  (${pct(av, bv)})`);
+  checkEnvironmentMatch(pathA, a, pathB, b);
+
+  console.log('=== diff (before -> after), median values');
+  for (const phase of PHASES) {
+    console.log(`  [${phase}]`);
+    for (const [metric, unit, higherIsBetter] of METRICS) {
+      const av = a.summary[phase][metric].median;
+      const bv = b.summary[phase][metric].median;
+      const change = pct(av, bv);
+      const flag = higherIsBetter ? (bv < av ? ' (worse)' : bv > av ? ' (better)' : '') : bv > av ? ' (worse)' : bv < av ? ' (better)' : '';
+      console.log(`    ${metric}: ${fmt(av, unit)} -> ${fmt(bv, unit)}  (${change})${flag}`);
+    }
   }
 }
 
