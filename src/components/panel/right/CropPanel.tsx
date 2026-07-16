@@ -24,7 +24,8 @@ import Slider from '../../ui/Slider';
 import { TEXT_COLOR_KEYS, TextColors, TextVariants, TextWeights } from '../../../types/typography';
 import { useEditorStore } from '../../../store/useEditorStore';
 import { useEditorActions } from '../../../hooks/useEditorActions';
-import { calculateCenteredCrop } from '../../../utils/cropUtils';
+import { calculateAreaPreservingCrop, calculateCenteredCrop } from '../../../utils/cropUtils';
+import { Crop } from 'react-image-crop';
 
 const BASE_RATIO = 1.618;
 const ORIGINAL_RATIO = 0;
@@ -243,13 +244,26 @@ export default function CropPanel() {
 
   const applyAspectRatio = useCallback(
     (newAspectRatio: number | null) => {
-      const newCrop =
-        selectedImage?.width && selectedImage?.height
-          ? calculateCenteredCrop(selectedImage.width, selectedImage.height, orientationSteps, newAspectRatio, rotation)
-          : null;
+      if (newAspectRatio === null) {
+        setAdjustments((prev: Adjustments) => ({ ...prev, aspectRatio: null }));
+        return;
+      }
+      let newCrop: Crop | null = null;
+      if (selectedImage?.width && selectedImage?.height) {
+        newCrop =
+          calculateAreaPreservingCrop(
+            selectedImage.width,
+            selectedImage.height,
+            orientationSteps,
+            newAspectRatio,
+            rotation,
+            adjustments.crop,
+          ) ??
+          calculateCenteredCrop(selectedImage.width, selectedImage.height, orientationSteps, newAspectRatio, rotation);
+      }
       setAdjustments((prev: Adjustments) => ({ ...prev, aspectRatio: newAspectRatio, crop: newCrop }));
     },
-    [selectedImage, orientationSteps, rotation, setAdjustments],
+    [selectedImage, orientationSteps, rotation, adjustments.crop, setAdjustments],
   );
 
   useEffect(() => {
