@@ -146,6 +146,7 @@ const ThumbnailComponent = ({
   return (
     <div
       className="aspect-square bg-surface rounded-md overflow-hidden cursor-pointer group relative flex flex-col transition-all duration-150 transform-gpu [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
+      data-bench-id="thumbnail"
       onClick={(e: any) => {
         e.stopPropagation();
         onImageClick(path, e);

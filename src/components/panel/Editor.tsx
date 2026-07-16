@@ -263,7 +263,7 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
     [setAdjustments],
   );
 
-  const handleWbPicked = useCallback(() => {}, []);
+  const handleWbPicked = useCallback(() => { }, []);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -1185,7 +1185,7 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
               pixelated: false,
             },
           })
-            .catch(() => {})
+            .catch(() => { })
             .finally(() => {
               isInvoking = false;
             });
@@ -1930,6 +1930,7 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
   }
 
   const isWgpuActive = appSettings?.useWgpuRenderer !== false && hasRenderedFirstFrame;
+  const hasRenderedAnyPreview = hasRenderedFirstFrame || !!finalPreviewUrl;
 
   return (
     <div
@@ -1941,6 +1942,7 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
           : clsx('rounded-lg p-2 gap-2', appSettings?.useWgpuRenderer !== false ? 'bg-transparent' : 'bg-bg-secondary'),
       )}
     >
+      {hasRenderedAnyPreview && <div className="hidden" data-bench-id="editor-first-frame" />}
       <div
         className={clsx(
           'shrink-0 relative z-10',
