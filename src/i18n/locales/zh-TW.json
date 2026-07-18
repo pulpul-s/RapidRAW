@@ -921,6 +921,7 @@
         "metadataHover": "懸停時",
         "metadataOff": "關閉",
         "noLabel": "無標籤",
+        "previewDetails": "預覽詳細資訊",
         "recursive": "遞迴",
         "showMetadata": "顯示後設資料",
         "sortAscending": "升序排列",
@@ -928,6 +929,8 @@
         "sortDescending": "降序排列",
         "thumbnailFit": "縮圖適應",
         "thumbnailSize": "縮圖大小",
+        "thumbnailsPerRow": "每行縮圖數",
+        "thumbnailStyle": "縮圖樣式",
         "title": "檢視選項"
       }
     },
@@ -948,6 +951,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "快門速度",
       "tooltipVirtualCopy": "虛擬副本"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "永遠",
+        "hover": "游標停留時",
+        "never": "永不"
+      },
+      "fields": {
+        "aperture": "光圈",
+        "camera": "相機",
+        "dimensions": "尺寸",
+        "edited": "已編輯",
+        "fileName": "檔案",
+        "focalLength": "焦距",
+        "iso": "ISO",
+        "label": "標籤",
+        "lens": "鏡頭",
+        "modified": "已修改",
+        "rating": "評分",
+        "shutter": "快門",
+        "virtualCopy": "虛擬副本"
+      },
+      "hidePanel": "隱藏預覽面板",
+      "imagesPerPage": "每頁影像數",
+      "metadata": "中繼資料",
+      "multipleValues": "多個值",
+      "nextPage": "下一預覽頁",
+      "no": "否",
+      "noSelection": "選取要預覽的影像",
+      "previousPage": "上一預覽頁",
+      "showPanel": "顯示預覽面板",
+      "thumbnailStyles": {
+        "below_filename": "名稱顯示於下方",
+        "hidden": "隱藏名稱",
+        "list": "清單",
+        "name_over_image": "名稱顯示於影像上"
+      },
+      "title": "預覽",
+      "yes": "是"
     },
     "search": {
       "noResults": "未找到結果",
@@ -1005,7 +1047,8 @@
     "tooltips": {
       "communityPresets": "社群預設",
       "goHome": "返回首頁",
-      "importImages": "匯入影像"
+      "importImages": "匯入影像",
+      "previewMode": "預覽模式"
     }
   },
   "masks": {
@@ -1453,7 +1496,9 @@
         "copy_files": "複製選中的檔案",
         "cycle_zoom": "迴圈縮放（適應、2倍適應、100%）",
         "delete_selected": "刪除選中的檔案",
+        "open_fullscreen_preview": "開啟全螢幕預覽",
         "open_image": "開啟選中的影像",
+        "open_loupe_preview": "開啟放大鏡預覽",
         "open_settings": "開啟設定",
         "paste_adjustments": "貼上複製的調整",
         "paste_files": "將檔案貼上到當前資料夾",
@@ -1585,6 +1630,15 @@
       "livePreviewQualityDesc": "控制拖動滑桿時影像的解析度和壓縮。較低的品質可顯著提高反應速度。",
       "livePreviews": "即時互動式預覽",
       "livePreviewsDesc": "拖動滑桿時立即更新預覽。如果介面在調整時感覺卡頓，請停用此選項。",
+      "loupeRenderArea": "放大鏡算繪區域",
+      "loupeRenderAreaDesc": "控制放大鏡周圍算繪的來源影像區域大小。區域越大，放大鏡在重新算繪前可移動得越遠，但會使用更多記憶體並增加算繪時間。完整影像在大型 RAW 檔案上可能較慢。",
+      "loupeRenderAreas": {
+        "1024": "小 — 1024 px",
+        "1536": "中 — 1536 px",
+        "2048": "大 — 2048 px",
+        "3072": "超大 — 3072 px",
+        "full": "完整影像"
+      },
       "modes": {
         "dynamic": "動態",
         "static": "固定解析度"
@@ -1756,6 +1810,11 @@
       "filterLabel": "影像檔案",
       "select": "選擇",
       "selectImageFile": "選擇影像檔案"
+    },
+    "loupe": {
+      "close": "關閉",
+      "releaseToRenderArea": "放開以轉譯此區域",
+      "renderingRawCrop": "正在轉譯 1:1 RAW 裁切"
     },
     "lut": {
       "clearLut": "清除 LUT",

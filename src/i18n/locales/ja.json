@@ -921,6 +921,7 @@
         "metadataHover": "ホバー時に表示",
         "metadataOff": "オフ",
         "noLabel": "ラベルなし",
+        "previewDetails": "プレビュー詳細",
         "recursive": "再帰的",
         "showMetadata": "メタデータを表示",
         "sortAscending": "昇順で並べ替え",
@@ -928,6 +929,8 @@
         "sortDescending": "降順で並べ替え",
         "thumbnailFit": "サムネイルのフィット",
         "thumbnailSize": "サムネイルサイズ",
+        "thumbnailsPerRow": "1行あたりのサムネイル数",
+        "thumbnailStyle": "サムネイルスタイル",
         "title": "表示オプション"
       }
     },
@@ -948,6 +951,45 @@
       "tooltipIso": "ISO感度",
       "tooltipShutterSpeed": "シャッタースピード",
       "tooltipVirtualCopy": "仮想コピー"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "常に表示",
+        "hover": "ホバー時",
+        "never": "表示しない"
+      },
+      "fields": {
+        "aperture": "絞り",
+        "camera": "カメラ",
+        "dimensions": "画像サイズ",
+        "edited": "編集済み",
+        "fileName": "ファイル",
+        "focalLength": "焦点距離",
+        "iso": "ISO",
+        "label": "ラベル",
+        "lens": "レンズ",
+        "modified": "変更日時",
+        "rating": "評価",
+        "shutter": "シャッター速度",
+        "virtualCopy": "仮想コピー"
+      },
+      "hidePanel": "プレビューパネルを隠す",
+      "imagesPerPage": "1ページあたりの画像数",
+      "metadata": "メタデータ",
+      "multipleValues": "複数の値",
+      "nextPage": "次のプレビューページ",
+      "no": "いいえ",
+      "noSelection": "プレビューする画像を選択",
+      "previousPage": "前のプレビューページ",
+      "showPanel": "プレビューパネルを表示",
+      "thumbnailStyles": {
+        "below_filename": "下に名前",
+        "hidden": "名前を非表示",
+        "list": "リスト",
+        "name_over_image": "画像上に名前"
+      },
+      "title": "プレビュー",
+      "yes": "はい"
     },
     "search": {
       "noResults": "結果が見つかりません",
@@ -1005,7 +1047,8 @@
     "tooltips": {
       "communityPresets": "コミュニティプリセット",
       "goHome": "ホームへ移動",
-      "importImages": "画像をインポート"
+      "importImages": "画像をインポート",
+      "previewMode": "プレビューモード"
     }
   },
   "masks": {
@@ -1453,7 +1496,9 @@
         "copy_files": "選択したファイルをコピー",
         "cycle_zoom": "ズームの切り替え (全体表示、2倍拡大、100%)",
         "delete_selected": "選択したファイルを削除",
+        "open_fullscreen_preview": "全画面プレビューを開く",
         "open_image": "選択した画像を開く",
+        "open_loupe_preview": "ルーペプレビューを開く",
         "open_settings": "設定を開く",
         "paste_adjustments": "コピーした補正設定を貼り付け",
         "paste_files": "現在のフォルダにファイルを貼り付け",
@@ -1585,6 +1630,15 @@
       "livePreviewQualityDesc": "スライダーをドラッグしている間の画像の解像度と圧縮を制御します。低画質にすると、操作のレスポンスが大幅に向上します。",
       "livePreviews": "インタラクティブなリアルタイムプレビュー",
       "livePreviewsDesc": "スライダーのドラッグに合わせてプレビューを即座に更新します。調整中に操作が重く感じる場合は、これを無効にしてください。",
+      "loupeRenderArea": "ルーペのレンダー範囲",
+      "loupeRenderAreaDesc": "ルーペ周辺でレンダーする元画像の範囲を設定します。範囲を大きくすると再レンダーなしでルーペをより遠くまで移動できますが、メモリ使用量が増え、レンダーに時間がかかります。フル画像は大きな RAW で遅くなる場合があります。",
+      "loupeRenderAreas": {
+        "1024": "小 — 1024 px",
+        "1536": "中 — 1536 px",
+        "2048": "大 — 2048 px",
+        "3072": "特大 — 3072 px",
+        "full": "フル画像"
+      },
       "modes": {
         "dynamic": "ダイナミック",
         "static": "固定解像度"
@@ -1756,6 +1810,11 @@
       "filterLabel": "画像ファイル",
       "select": "選択",
       "selectImageFile": "画像ファイルを選択"
+    },
+    "loupe": {
+      "close": "閉じる",
+      "releaseToRenderArea": "離してこの領域をレンダリング",
+      "renderingRawCrop": "1:1 RAW クロップをレンダリング中"
     },
     "lut": {
       "clearLut": "LUTをクリア",

@@ -7,6 +7,7 @@ import {
   Folder,
   FolderInput,
   Home,
+  Eye,
   Loader2,
   RefreshCw,
   Settings,
@@ -15,6 +16,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import { ThemeProps, THEMES, DEFAULT_THEME_ID } from '../../utils/themes';
@@ -22,6 +24,7 @@ import {
   AppSettings,
   ImageFile,
   LibraryViewMode,
+  LibraryLayoutMode,
   Progress,
   ThumbnailSize,
   ThumbnailAspectRatio,
@@ -32,9 +35,11 @@ import { ImportState, Status } from '../ui/ExportImportProperties';
 import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
 import { useLibraryStore } from '../../store/useLibraryStore';
+import { discardLoupesAndClearMemory } from '../../store/useLoupeStore';
 import { useUIStore } from '../../store/useUIStore';
 
 import LibraryGrid from './library/LibraryGrid';
+import LibraryPreviewMode from './library/LibraryPreviewMode';
 import { SearchInput, ViewOptionsDropdown } from './library/LibraryHeader';
 
 interface MainLibraryProps {
@@ -53,7 +58,11 @@ interface MainLibraryProps {
   libraryViewMode: LibraryViewMode;
   multiSelectedPaths: Array<string>;
   onClearSelection(): void;
-  onContextMenu(event: any, path: string): void;
+  onContextMenu(
+    event: any,
+    path: string,
+    options?: { forceSingleSelection?: boolean; preserveSelection?: boolean },
+  ): void;
   onContinueSession(): void;
   onEmptyAreaContextMenu(event: any): void;
   onGoHome(): void;
@@ -97,6 +106,15 @@ export default function MainLibrary(props: MainLibraryProps) {
   const [isProgressHovered, setIsProgressHovered] = useState(false);
 
   const searchCriteria = useLibraryStore((state) => state.searchCriteria);
+  const libraryLayoutMode = useUIStore((state) => state.libraryLayoutMode);
+  const isPreviewMode = !props.isAndroid && libraryLayoutMode === LibraryLayoutMode.Preview;
+
+  useEffect(() => {
+    if (props.isAndroid && libraryLayoutMode === LibraryLayoutMode.Preview) {
+      discardLoupesAndClearMemory();
+      setUI({ libraryLayoutMode: LibraryLayoutMode.Grid });
+    }
+  }, [libraryLayoutMode, props.isAndroid, setUI]);
 
   const translatedRatingFilterOptions = useMemo(
     () => [
@@ -407,7 +425,9 @@ export default function MainLibrary(props: MainLibraryProps) {
         onMouseLeave={() => setIsProgressHovered(false)}
       >
         <div className="min-w-0">
-          <Text variant={TextVariants.headline}>{t('library.header.title')}</Text>
+          <Text variant={TextVariants.headline}>
+            {isPreviewMode ? t('library.preview.title') : t('library.header.title')}
+          </Text>
           {!props.isAndroid && (
             <div className="flex items-center gap-2">
               {props.currentFolderPath ? (
@@ -476,10 +496,35 @@ export default function MainLibrary(props: MainLibraryProps) {
             sortOptions={translatedSortOptions}
           />
           {!props.isAndroid && (
+            <Button
+              aria-pressed={isPreviewMode}
+              className={clsx(
+                'h-12 w-12 bg-surface shadow-none p-0 flex items-center justify-center shrink-0 hover:!scale-100 active:!scale-100',
+                isPreviewMode ? '!bg-accent !text-button-text' : 'text-text-primary',
+              )}
+              onClick={() => {
+                if (isPreviewMode) discardLoupesAndClearMemory();
+                setUI({
+                  libraryLayoutMode: isPreviewMode ? LibraryLayoutMode.Grid : LibraryLayoutMode.Preview,
+                });
+              }}
+              data-tooltip={t('library.tooltips.previewMode')}
+            >
+              <Eye className="w-6 h-6" />
+            </Button>
+          )}
+          {!props.isAndroid && (
             <>
               <Button
                 className="h-12 w-12 bg-surface text-text-primary shadow-none p-0 flex items-center justify-center"
-                onClick={props.onNavigateToCommunity}
+                onClick={
+                  isPreviewMode
+                    ? () => {
+                        discardLoupesAndClearMemory();
+                        props.onNavigateToCommunity();
+                      }
+                    : props.onNavigateToCommunity
+                }
                 data-tooltip={t('library.tooltips.communityPresets')}
               >
                 <Users className="w-8 h-8" />
@@ -497,7 +542,11 @@ export default function MainLibrary(props: MainLibraryProps) {
       </header>
 
       {props.imageList.length > 0 ? (
-        <LibraryGrid {...props} thumbnailSizeOptions={translatedThumbnailSizeOptions} />
+        isPreviewMode ? (
+          <LibraryPreviewMode {...props} />
+        ) : (
+          <LibraryGrid {...props} thumbnailSizeOptions={translatedThumbnailSizeOptions} />
+        )
       ) : props.isIndexing || props.aiModelDownloadStatus || props.importState.status === Status.Importing ? (
         <div className="flex-1 flex flex-col items-center justify-center" onContextMenu={props.onEmptyAreaContextMenu}>
           <Loader2 className="h-12 w-12 text-secondary animate-spin mb-4" />

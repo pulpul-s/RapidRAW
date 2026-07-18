@@ -35,6 +35,7 @@ export function useImageProcessing(
   const setEditor = useEditorStore((state) => state.setEditor);
 
   const activeRightPanel = useUIStore((state) => state.activeRightPanel);
+  const quickPreviewMode = useUIStore((state) => state.quickPreviewMode);
   const appSettings = useSettingsStore((state) => state.appSettings);
   const multiSelectedPaths = useLibraryStore((state) => state.multiSelectedPaths);
 
@@ -314,6 +315,11 @@ export function useImageProcessing(
 
   const calculateTargetRes = useCallback(() => {
     const baseTargetRes = appSettings?.editorPreviewResolution || 1920;
+
+    if (quickPreviewMode && originalSize?.width > 0 && originalSize?.height > 0) {
+      return Math.max(originalSize.width, originalSize.height);
+    }
+
     if (!(appSettings?.enableZoomHifi ?? true) || displaySize.width === 0) {
       return baseTargetRes;
     }
@@ -347,6 +353,7 @@ export function useImageProcessing(
     displaySize.width,
     displaySize.height,
     originalSize,
+    quickPreviewMode,
   ]);
 
   const requestHiFiZoom = useMemo(

@@ -345,6 +345,8 @@ pub struct AppSettings {
     pub enable_live_previews: Option<bool>,
     #[serde(default)]
     pub live_preview_quality: Option<String>,
+    #[serde(default)]
+    pub loupe_render_area: Option<String>,
     pub sort_criteria: Option<SortCriteria>,
     pub filter_criteria: Option<FilterCriteria>,
     pub theme: Option<String>,
@@ -365,6 +367,22 @@ pub struct AppSettings {
     pub ai_tag_count: Option<u32>,
     pub thumbnail_size: Option<String>,
     pub thumbnail_aspect_ratio: Option<String>,
+    #[serde(default)]
+    pub library_preview_right_panel_width: Option<u32>,
+    #[serde(default)]
+    pub library_preview_metadata_height: Option<u32>,
+    #[serde(default)]
+    pub library_preview_thumbnails_per_row: Option<u32>,
+    #[serde(default)]
+    pub library_preview_page_size: Option<u32>,
+    #[serde(default)]
+    pub library_preview_thumbnail_aspect_ratio: Option<String>,
+    #[serde(default)]
+    pub library_preview_exif_overlay: Option<String>,
+    #[serde(default)]
+    pub library_preview_thumbnail_style: Option<String>,
+    #[serde(default)]
+    pub library_preview_details_mode: Option<String>,
     pub ai_provider: Option<String>,
     #[serde(default = "default_adjustment_visibility")]
     pub adjustment_visibility: HashMap<String, bool>,
@@ -451,6 +469,7 @@ impl Default for AppSettings {
             use_full_dpi_rendering: Some(false),
             enable_live_previews: Some(true),
             live_preview_quality: Some("high".to_string()),
+            loupe_render_area: Some("1536".to_string()),
             sort_criteria: None,
             filter_criteria: None,
             theme: Some("dark".to_string()),
@@ -469,6 +488,14 @@ impl Default for AppSettings {
             #[cfg(not(target_os = "android"))]
             thumbnail_size: Some("medium".to_string()),
             thumbnail_aspect_ratio: Some("cover".to_string()),
+            library_preview_right_panel_width: Some(280),
+            library_preview_metadata_height: Some(160),
+            library_preview_thumbnails_per_row: Some(4),
+            library_preview_page_size: Some(16),
+            library_preview_thumbnail_aspect_ratio: Some("contain".to_string()),
+            library_preview_exif_overlay: Some("off".to_string()),
+            library_preview_thumbnail_style: Some("below_filename".to_string()),
+            library_preview_details_mode: Some("hover".to_string()),
             ai_provider: Some("cpu".to_string()),
             adjustment_visibility: default_adjustment_visibility(),
             open_tree_sections: default_open_tree_sections(),

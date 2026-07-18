@@ -43,6 +43,8 @@ use crate::mask_generation::MaskDefinition;
 use crate::preset_converter;
 use crate::tagging::COLOR_TAG_PREFIX;
 
+const LIBRARY_PREVIEW_FAST_RENDER_MIN_EDGE_RATIO: f32 = 0.95;
+
 fn resolve_thumbnail_cache_dir(app_handle: &AppHandle) -> std::result::Result<PathBuf, String> {
     let cache_dir = app_handle
         .path()
@@ -1207,6 +1209,89 @@ pub fn generate_thumbnail_data(
     preloaded_image: Option<&DynamicImage>,
     app_handle: &AppHandle,
 ) -> anyhow::Result<DynamicImage> {
+    generate_thumbnail_data_at_resolution_with_raw_mode(
+        path_str,
+        gpu_context,
+        preloaded_image,
+        app_handle,
+        None,
+        true,
+    )
+}
+
+pub fn generate_library_preview_data_at_resolution(
+    path_str: &str,
+    gpu_context: Option<&GpuContext>,
+    preloaded_image: Option<&DynamicImage>,
+    app_handle: &AppHandle,
+    target_resolution: u32,
+) -> anyhow::Result<DynamicImage> {
+    let preview_image = generate_thumbnail_data_at_resolution_with_raw_mode(
+        path_str,
+        gpu_context,
+        preloaded_image,
+        app_handle,
+        Some(target_resolution),
+        true,
+    )?;
+
+    if library_preview_needs_full_raw(path_str, target_resolution, &preview_image) {
+        return generate_thumbnail_data_at_resolution_with_raw_mode(
+            path_str,
+            gpu_context,
+            preloaded_image,
+            app_handle,
+            Some(target_resolution),
+            false,
+        );
+    }
+
+    Ok(preview_image)
+}
+
+fn library_preview_desired_output_edge(path_str: &str, target_resolution: u32) -> u32 {
+    let (_, sidecar_path) = parse_virtual_path(path_str);
+    let metadata: Option<ImageMetadata> = fs::read_to_string(sidecar_path)
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok());
+
+    let crop_max_edge = metadata
+        .as_ref()
+        .and_then(|metadata| {
+            serde_json::from_value::<Crop>(metadata.adjustments["crop"].clone()).ok()
+        })
+        .filter(|crop| crop.width > 0.0 && crop.height > 0.0)
+        .map(|crop| crop.width.max(crop.height).round().max(1.0) as u32);
+
+    crop_max_edge
+        .map(|edge| target_resolution.min(edge).max(1))
+        .unwrap_or(target_resolution.max(1))
+}
+
+fn library_preview_needs_full_raw(
+    path_str: &str,
+    target_resolution: u32,
+    preview_image: &DynamicImage,
+) -> bool {
+    let (source_path, _) = parse_virtual_path(path_str);
+    let source_path_str = source_path.to_string_lossy();
+    if !is_raw_file(source_path_str.as_ref()) {
+        return false;
+    }
+
+    let desired_edge = library_preview_desired_output_edge(path_str, target_resolution) as f32;
+    let rendered_edge = preview_image.width().max(preview_image.height()) as f32;
+    rendered_edge < desired_edge * LIBRARY_PREVIEW_FAST_RENDER_MIN_EDGE_RATIO
+}
+
+fn generate_thumbnail_data_at_resolution_with_raw_mode(
+    path_str: &str,
+    gpu_context: Option<&GpuContext>,
+    preloaded_image: Option<&DynamicImage>,
+    app_handle: &AppHandle,
+    target_resolution: Option<u32>,
+    use_fast_raw_dev: bool,
+) -> anyhow::Result<DynamicImage> {
     let (source_path, sidecar_path) = parse_virtual_path(path_str);
     let source_path_str = source_path.to_string_lossy().to_string();
     let is_raw = is_raw_file(&source_path_str);
@@ -1234,35 +1319,46 @@ pub fn generate_thumbnail_data(
     {
         let state = app_handle.state::<AppState>();
         let settings = load_settings(app_handle.clone()).unwrap_or_default();
-        let target_res = settings.thumbnail_resolution.unwrap_or(720);
+        let target_res =
+            target_resolution.unwrap_or_else(|| settings.thumbnail_resolution.unwrap_or(720));
 
         let geometry_hash = calculate_geometry_hash(&meta.adjustments);
 
         let crop_data: Option<Crop> = serde_json::from_value(meta.adjustments["crop"].clone()).ok();
 
-        let cached_base: Option<(DynamicImage, f32)> = {
+        let cached_base: Option<(DynamicImage, f32)> = if use_fast_raw_dev {
             let cache = state.thumbnail_geometry_cache.lock().unwrap();
-            if let Some((cached_hash, img, scale)) = cache.get(path_str) {
-                let mut sufficient_resolution = true;
-                if let Some(c) = &crop_data
+            if let Some(entry) = cache.get(path_str) {
+                let cached_base_max_dim = entry.image.width().max(entry.image.height()) as f32;
+                let mut sufficient_resolution = target_resolution.is_none()
+                    || entry.is_full_resolution
+                    || cached_base_max_dim
+                        >= target_res as f32 * LIBRARY_PREVIEW_FAST_RENDER_MIN_EDGE_RATIO;
+
+                if (target_resolution.is_none() || !entry.is_full_resolution)
+                    && let Some(c) = &crop_data
                     && c.width > 0.0
                     && c.height > 0.0
                 {
                     let final_crop_max_dim =
-                        (c.width as f32 * *scale).max(c.height as f32 * *scale);
-                    if final_crop_max_dim < (target_res as f32 * 0.95) {
+                        (c.width as f32 * entry.scale).max(c.height as f32 * entry.scale);
+                    if final_crop_max_dim
+                        < target_res as f32 * LIBRARY_PREVIEW_FAST_RENDER_MIN_EDGE_RATIO
+                    {
                         sufficient_resolution = false;
                     }
                 }
 
-                if *cached_hash == geometry_hash && sufficient_resolution {
-                    Some((img.clone(), *scale))
+                if entry.geometry_hash == geometry_hash && sufficient_resolution {
+                    Some((entry.image.clone(), entry.scale))
                 } else {
                     None
                 }
             } else {
                 None
             }
+        } else {
+            None
         };
 
         let (processing_base, total_scale) = if let Some(hit) = cached_base {
@@ -1302,12 +1398,12 @@ pub fn generate_thumbnail_data(
                     file_slice,
                     &source_path_str,
                     &adjustments,
-                    true,
+                    use_fast_raw_dev,
                     &settings,
                     None,
                 )?;
 
-                if is_raw {
+                if is_raw && use_fast_raw_dev {
                     raw_scale_factor = crate::raw_processing::get_fast_demosaic_scale_factor(
                         file_slice,
                         img.width(),
@@ -1339,32 +1435,40 @@ pub fn generate_thumbnail_data(
                 }
             }
 
-            let (base, gpu_scale) = if full_w > processing_dim || full_h > processing_dim {
-                let base = crate::image_processing::downscale_f32_image(
-                    &coarse_rotated_image,
-                    processing_dim,
-                    processing_dim,
-                );
-                let scale = if full_w > 0 {
-                    base.width() as f32 / full_w as f32
+            let (base, gpu_scale, is_full_resolution) =
+                if full_w > processing_dim || full_h > processing_dim {
+                    let base = crate::image_processing::downscale_f32_image(
+                        &coarse_rotated_image,
+                        processing_dim,
+                        processing_dim,
+                    );
+                    let scale = if full_w > 0 {
+                        base.width() as f32 / full_w as f32
+                    } else {
+                        1.0
+                    };
+                    (base, scale, false)
                 } else {
-                    1.0
+                    (coarse_rotated_image.into_owned(), 1.0, true)
                 };
-                (base, scale)
-            } else {
-                (coarse_rotated_image.into_owned(), 1.0)
-            };
 
             let total_scale = gpu_scale * raw_scale_factor;
 
-            let mut cache = state.thumbnail_geometry_cache.lock().unwrap();
-            if cache.len() > 30 {
-                cache.clear();
+            if target_resolution.is_none() {
+                let mut cache = state.thumbnail_geometry_cache.lock().unwrap();
+                if cache.len() > 30 {
+                    cache.clear();
+                }
+                cache.insert(
+                    path_str.to_string(),
+                    crate::app_state::ThumbnailGeometryCacheEntry {
+                        geometry_hash,
+                        image: base.clone(),
+                        scale: total_scale,
+                        is_full_resolution,
+                    },
+                );
             }
-            cache.insert(
-                path_str.to_string(),
-                (geometry_hash, base.clone(), total_scale),
-            );
 
             (base, total_scale)
         };
@@ -1468,7 +1572,7 @@ pub fn generate_thumbnail_data(
                 &mmap,
                 &source_path_str,
                 &adjustments,
-                true,
+                use_fast_raw_dev,
                 &settings,
                 None,
             )?,
@@ -1479,7 +1583,7 @@ pub fn generate_thumbnail_data(
                     &bytes,
                     &source_path_str,
                     &adjustments,
-                    true,
+                    use_fast_raw_dev,
                     &settings,
                     None,
                 )?

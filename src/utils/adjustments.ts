@@ -360,6 +360,14 @@ export const COLOR_LABELS: Array<Color> = [
   { name: 'purple', color: '#a78bfa' },
 ];
 
+const COLOR_LABEL_TAG_PREFIX = 'color:';
+
+export function getColorLabelForTags(tags: Array<string> | null | undefined): Color | undefined {
+  const colorTag = tags?.find((tag) => tag.startsWith(COLOR_LABEL_TAG_PREFIX));
+  const colorName = colorTag?.substring(COLOR_LABEL_TAG_PREFIX.length);
+  return COLOR_LABELS.find((label) => label.name === colorName);
+}
+
 const INITIAL_COLOR_GRADING: ColorGradingProps = {
   balance: 0,
   blending: 50,

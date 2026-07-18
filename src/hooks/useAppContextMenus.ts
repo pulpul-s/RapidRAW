@@ -320,7 +320,7 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
   );
 
   const handleThumbnailContextMenu = useCallback(
-    (event: any, path: string) => {
+    (event: any, path: string, menuOptions?: { forceSingleSelection?: boolean; preserveSelection?: boolean }) => {
       event.preventDefault();
       event.stopPropagation();
 
@@ -334,7 +334,15 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
       const isTargetInSelection = multiSelectedPaths.includes(path);
       let finalSelection: string[];
 
-      if (!isTargetInSelection) {
+      if (menuOptions?.forceSingleSelection) {
+        finalSelection = [path];
+        if (!menuOptions.preserveSelection) {
+          setLibrary({ multiSelectedPaths: [path] });
+          if (!selectedImage) {
+            setLibrary({ libraryActivePath: path });
+          }
+        }
+      } else if (!isTargetInSelection) {
         finalSelection = [path];
         setLibrary({ multiSelectedPaths: [path] });
         if (!selectedImage) {

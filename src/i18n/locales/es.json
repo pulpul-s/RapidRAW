@@ -946,6 +946,7 @@
         "metadataHover": "Al pasar el ratón",
         "metadataOff": "Desactivado",
         "noLabel": "Sin etiqueta",
+        "previewDetails": "Detalles de vista previa",
         "recursive": "Recursivo",
         "showMetadata": "Mostrar metadatos",
         "sortAscending": "Ordenar ascendente",
@@ -953,6 +954,8 @@
         "sortDescending": "Ordenar descendente",
         "thumbnailFit": "Ajuste de miniatura",
         "thumbnailSize": "Tamaño de miniatura",
+        "thumbnailsPerRow": "Miniaturas por fila",
+        "thumbnailStyle": "Estilo de miniatura",
         "title": "Opciones de vista"
       }
     },
@@ -974,6 +977,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Velocidad de obturación",
       "tooltipVirtualCopy": "Copia virtual"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Siempre",
+        "hover": "Al pasar el cursor",
+        "never": "Nunca"
+      },
+      "fields": {
+        "aperture": "Apertura",
+        "camera": "Cámara",
+        "dimensions": "Dimensiones",
+        "edited": "Editada",
+        "fileName": "Archivo",
+        "focalLength": "Distancia focal",
+        "iso": "ISO",
+        "label": "Etiqueta",
+        "lens": "Lente",
+        "modified": "Modificado",
+        "rating": "Calificación",
+        "shutter": "Obturador",
+        "virtualCopy": "Copia virtual"
+      },
+      "hidePanel": "Ocultar panel de vista previa",
+      "imagesPerPage": "Imágenes por página",
+      "metadata": "Metadatos",
+      "multipleValues": "Varios valores",
+      "nextPage": "Página de vista previa siguiente",
+      "no": "No",
+      "noSelection": "Selecciona imágenes para previsualizar",
+      "previousPage": "Página de vista previa anterior",
+      "showPanel": "Mostrar panel de vista previa",
+      "thumbnailStyles": {
+        "below_filename": "Nombre debajo",
+        "hidden": "Nombre oculto",
+        "list": "Lista",
+        "name_over_image": "Nombre sobre la imagen"
+      },
+      "title": "Vista previa",
+      "yes": "Sí"
     },
     "search": {
       "noResults": "No se encontraron resultados",
@@ -1031,7 +1073,8 @@
     "tooltips": {
       "communityPresets": "Ajustes de la comunidad",
       "goHome": "Ir al Inicio",
-      "importImages": "Importar imágenes"
+      "importImages": "Importar imágenes",
+      "previewMode": "Modo de vista previa"
     }
   },
   "masks": {
@@ -1488,7 +1531,9 @@
         "copy_files": "Copiar archivo(s) seleccionado(s)",
         "cycle_zoom": "Alternar zoom (Ajustar, 2x Ajustar, 100%)",
         "delete_selected": "Eliminar archivo(s) seleccionado(s)",
+        "open_fullscreen_preview": "Abrir vista previa a pantalla completa",
         "open_image": "Abrir imagen seleccionada",
+        "open_loupe_preview": "Abrir vista previa de lupa",
         "open_settings": "Abrir la configuración",
         "paste_adjustments": "Pegar ajustes copiados",
         "paste_files": "Pegar archivo(s) a la carpeta actual",
@@ -1620,6 +1665,15 @@
       "livePreviewQualityDesc": "Controla la resolución y compresión de la imagen al arrastrar los controles deslizantes. Una calidad más baja mejora significativamente la capacidad de respuesta.",
       "livePreviews": "Vistas previas interactivas en vivo",
       "livePreviewsDesc": "Actualiza la vista previa inmediatamente al arrastrar los controles deslizantes. Desactiva esto si la interfaz se siente lenta durante los ajustes.",
+      "loupeRenderArea": "Área de renderizado de la lupa",
+      "loupeRenderAreaDesc": "Controla qué tamaño de área de origen se renderiza alrededor de la lupa. Las áreas más grandes permiten mover la lupa más lejos antes de volver a renderizar, pero usan más memoria y tardan más. La imagen completa puede ser lenta con archivos RAW grandes.",
+      "loupeRenderAreas": {
+        "1024": "Pequeña — 1024 px",
+        "1536": "Media — 1536 px",
+        "2048": "Grande — 2048 px",
+        "3072": "Muy grande — 3072 px",
+        "full": "Imagen completa"
+      },
       "modes": {
         "dynamic": "Dinámico",
         "static": "Resolución fija"
@@ -1792,6 +1846,11 @@
       "filterLabel": "Archivos de imagen",
       "select": "Seleccionar",
       "selectImageFile": "Seleccionar un archivo de imagen"
+    },
+    "loupe": {
+      "close": "Cerrar",
+      "releaseToRenderArea": "Suelta para renderizar esta área",
+      "renderingRawCrop": "Renderizando recorte RAW 1:1"
     },
     "lut": {
       "clearLut": "Borrar LUT",

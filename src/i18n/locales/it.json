@@ -946,6 +946,7 @@
         "metadataHover": "Al passaggio del mouse",
         "metadataOff": "Spento",
         "noLabel": "Nessuna Etichetta",
+        "previewDetails": "Dettagli anteprima",
         "recursive": "Ricorsiva",
         "showMetadata": "Mostra Metadati",
         "sortAscending": "Ordina in ordine Crescente",
@@ -953,6 +954,8 @@
         "sortDescending": "Ordina in ordine Decrescente",
         "thumbnailFit": "Adattamento Miniatura",
         "thumbnailSize": "Dimensione Miniatura",
+        "thumbnailsPerRow": "Miniature per riga",
+        "thumbnailStyle": "Stile miniature",
         "title": "Opzioni di Visualizzazione"
       }
     },
@@ -974,6 +977,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Tempo di Esposizione",
       "tooltipVirtualCopy": "Copia Virtuale"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Sempre",
+        "hover": "Al passaggio",
+        "never": "Mai"
+      },
+      "fields": {
+        "aperture": "Diaframma",
+        "camera": "Fotocamera",
+        "dimensions": "Dimensioni",
+        "edited": "Modificata",
+        "fileName": "File",
+        "focalLength": "Lunghezza focale",
+        "iso": "ISO",
+        "label": "Etichetta",
+        "lens": "Obiettivo",
+        "modified": "Modificato",
+        "rating": "Valutazione",
+        "shutter": "Otturatore",
+        "virtualCopy": "Copia virtuale"
+      },
+      "hidePanel": "Nascondi pannello anteprima",
+      "imagesPerPage": "Immagini per pagina",
+      "metadata": "Metadati",
+      "multipleValues": "Più valori",
+      "nextPage": "Pagina di anteprima successiva",
+      "no": "No",
+      "noSelection": "Seleziona immagini da visualizzare in anteprima",
+      "previousPage": "Pagina di anteprima precedente",
+      "showPanel": "Mostra pannello anteprima",
+      "thumbnailStyles": {
+        "below_filename": "Nome sotto",
+        "hidden": "Nome nascosto",
+        "list": "Elenco",
+        "name_over_image": "Nome sull'immagine"
+      },
+      "title": "Anteprima",
+      "yes": "Sì"
     },
     "search": {
       "noResults": "Nessun Risultato Trovato",
@@ -1031,7 +1073,8 @@
     "tooltips": {
       "communityPresets": "Predefiniti della Community",
       "goHome": "Torna alla Home page",
-      "importImages": "Importa Immagini"
+      "importImages": "Importa Immagini",
+      "previewMode": "Modalità anteprima"
     }
   },
   "masks": {
@@ -1488,7 +1531,9 @@
         "copy_files": "Copia file selezionati",
         "cycle_zoom": "Ruota zoom (Adatta, Adatta 2x, 100%)",
         "delete_selected": "Elimina file selezionati",
+        "open_fullscreen_preview": "Apri anteprima a schermo intero",
         "open_image": "Apri immagine selezionata",
+        "open_loupe_preview": "Apri anteprima lente",
         "open_settings": "Apri le impostazioni",
         "paste_adjustments": "Incolla regolazioni copiate",
         "paste_files": "Incolla file nella cartella corrente",
@@ -1620,6 +1665,15 @@
       "livePreviewQualityDesc": "Controlla la risoluzione e la compressione dell'immagine mentre trascini i cursori. Una qualità inferiore migliora significativamente la reattività.",
       "livePreviews": "Anteprime Interattive dal Vivo",
       "livePreviewsDesc": "Aggiorna l'anteprima immediatamente mentre si trascinano i cursori. Disabilita se l'interfaccia risulta lenta durante le regolazioni.",
+      "loupeRenderArea": "Area di rendering della lente",
+      "loupeRenderAreaDesc": "Controlla quanto è grande l’area sorgente renderizzata intorno alla lente. Aree più grandi permettono di spostare di più la lente prima di un nuovo rendering, ma usano più memoria e richiedono più tempo. L’immagine completa può essere lenta con file RAW grandi.",
+      "loupeRenderAreas": {
+        "1024": "Piccola — 1024 px",
+        "1536": "Media — 1536 px",
+        "2048": "Grande — 2048 px",
+        "3072": "Molto grande — 3072 px",
+        "full": "Immagine completa"
+      },
       "modes": {
         "dynamic": "Dinamica",
         "static": "Risoluzione Fissa"
@@ -1792,6 +1846,11 @@
       "filterLabel": "File Immagine",
       "select": "Seleziona",
       "selectImageFile": "Seleziona un file immagine"
+    },
+    "loupe": {
+      "close": "Chiudi",
+      "releaseToRenderArea": "Rilascia per eseguire il rendering di quest'area",
+      "renderingRawCrop": "Rendering ritaglio RAW 1:1"
     },
     "lut": {
       "clearLut": "Cancella LUT",

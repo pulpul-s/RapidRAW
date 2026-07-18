@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useUIStore } from '../store/useUIStore';
+import { clampLibraryPreviewPageSize, useUIStore } from '../store/useUIStore';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useEditorStore } from '../store/useEditorStore';
 import { useProcessStore } from '../store/useProcessStore';
@@ -80,9 +80,28 @@ export const useAppInitialization = ({
     })),
   );
 
-  const { uiVisibility, setUI } = useUIStore(
+  const {
+    uiVisibility,
+    libraryPreviewRightPanelWidth,
+    libraryPreviewMetadataHeight,
+    libraryPreviewThumbnailsPerRow,
+    libraryPreviewPageSize,
+    libraryPreviewThumbnailAspectRatio,
+    libraryPreviewExifOverlay,
+    libraryPreviewThumbnailStyle,
+    libraryPreviewDetailsMode,
+    setUI,
+  } = useUIStore(
     useShallow((state) => ({
       uiVisibility: state.uiVisibility,
+      libraryPreviewRightPanelWidth: state.libraryPreviewRightPanelWidth,
+      libraryPreviewMetadataHeight: state.libraryPreviewMetadataHeight,
+      libraryPreviewThumbnailsPerRow: state.libraryPreviewThumbnailsPerRow,
+      libraryPreviewPageSize: state.libraryPreviewPageSize,
+      libraryPreviewThumbnailAspectRatio: state.libraryPreviewThumbnailAspectRatio,
+      libraryPreviewExifOverlay: state.libraryPreviewExifOverlay,
+      libraryPreviewThumbnailStyle: state.libraryPreviewThumbnailStyle,
+      libraryPreviewDetailsMode: state.libraryPreviewDetailsMode,
       setUI: state.setUI,
     })),
   );
@@ -165,8 +184,23 @@ export const useAppInitialization = ({
 
         if (settings?.theme) setTheme(settings.theme);
 
-        if (settings?.uiVisibility)
-          setUI((state) => ({ uiVisibility: { ...state.uiVisibility, ...settings.uiVisibility } }));
+        setUI((state) => ({
+          uiVisibility: settings?.uiVisibility
+            ? { ...state.uiVisibility, ...settings.uiVisibility }
+            : state.uiVisibility,
+          libraryPreviewRightPanelWidth: settings?.libraryPreviewRightPanelWidth ?? state.libraryPreviewRightPanelWidth,
+          libraryPreviewMetadataHeight: settings?.libraryPreviewMetadataHeight ?? state.libraryPreviewMetadataHeight,
+          libraryPreviewThumbnailsPerRow:
+            settings?.libraryPreviewThumbnailsPerRow ?? state.libraryPreviewThumbnailsPerRow,
+          libraryPreviewPageSize: clampLibraryPreviewPageSize(
+            settings?.libraryPreviewPageSize ?? state.libraryPreviewPageSize,
+          ),
+          libraryPreviewThumbnailAspectRatio:
+            settings?.libraryPreviewThumbnailAspectRatio ?? state.libraryPreviewThumbnailAspectRatio,
+          libraryPreviewExifOverlay: settings?.libraryPreviewExifOverlay ?? state.libraryPreviewExifOverlay,
+          libraryPreviewThumbnailStyle: settings?.libraryPreviewThumbnailStyle ?? state.libraryPreviewThumbnailStyle,
+          libraryPreviewDetailsMode: settings?.libraryPreviewDetailsMode ?? state.libraryPreviewDetailsMode,
+        }));
 
         if (settings?.isWaveformVisible !== undefined) setEditor({ isWaveformVisible: settings.isWaveformVisible });
         if (settings?.activeWaveformChannel) setEditor({ activeWaveformChannel: settings.activeWaveformChannel });
@@ -267,6 +301,43 @@ export const useAppInitialization = ({
       handleSettingsChange({ ...appSettings, uiVisibility });
     }
   }, [uiVisibility, appSettings, handleSettingsChange]);
+
+  useEffect(() => {
+    if (isInitialMount.current || !appSettings) return;
+    if (
+      appSettings.libraryPreviewRightPanelWidth !== libraryPreviewRightPanelWidth ||
+      appSettings.libraryPreviewMetadataHeight !== libraryPreviewMetadataHeight ||
+      appSettings.libraryPreviewThumbnailsPerRow !== libraryPreviewThumbnailsPerRow ||
+      appSettings.libraryPreviewPageSize !== libraryPreviewPageSize ||
+      appSettings.libraryPreviewThumbnailAspectRatio !== libraryPreviewThumbnailAspectRatio ||
+      appSettings.libraryPreviewExifOverlay !== libraryPreviewExifOverlay ||
+      appSettings.libraryPreviewThumbnailStyle !== libraryPreviewThumbnailStyle ||
+      appSettings.libraryPreviewDetailsMode !== libraryPreviewDetailsMode
+    ) {
+      handleSettingsChange({
+        ...appSettings,
+        libraryPreviewRightPanelWidth,
+        libraryPreviewMetadataHeight,
+        libraryPreviewThumbnailsPerRow,
+        libraryPreviewPageSize,
+        libraryPreviewThumbnailAspectRatio,
+        libraryPreviewExifOverlay,
+        libraryPreviewThumbnailStyle,
+        libraryPreviewDetailsMode,
+      });
+    }
+  }, [
+    libraryPreviewRightPanelWidth,
+    libraryPreviewMetadataHeight,
+    libraryPreviewThumbnailsPerRow,
+    libraryPreviewPageSize,
+    libraryPreviewThumbnailAspectRatio,
+    libraryPreviewExifOverlay,
+    libraryPreviewThumbnailStyle,
+    libraryPreviewDetailsMode,
+    appSettings,
+    handleSettingsChange,
+  ]);
 
   useEffect(() => {
     if (isInitialMount.current || !appSettings) return;

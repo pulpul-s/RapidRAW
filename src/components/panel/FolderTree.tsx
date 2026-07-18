@@ -27,6 +27,7 @@ import clsx from 'clsx';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { invoke } from '@tauri-apps/api/core';
 import Text from '../ui/Text';
 import { TEXT_COLOR_KEYS, TextColors, TextVariants, TextWeights } from '../../types/typography';
@@ -625,7 +626,18 @@ export default function FolderTree({
     albumTree,
     activeAlbumId,
     expandedAlbumGroups,
-  } = useLibraryStore();
+  } = useLibraryStore(
+    useShallow((state) => ({
+      folderTrees: state.folderTrees,
+      pinnedFolderTrees: state.pinnedFolderTrees,
+      currentFolderPath: state.currentFolderPath,
+      expandedFolders: state.expandedFolders,
+      isTreeLoading: state.isTreeLoading,
+      albumTree: state.albumTree,
+      activeAlbumId: state.activeAlbumId,
+      expandedAlbumGroups: state.expandedAlbumGroups,
+    })),
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isHovering, setIsHovering] = useState(false);

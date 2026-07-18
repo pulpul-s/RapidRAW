@@ -923,6 +923,7 @@
         "metadataHover": "On Hover",
         "metadataOff": "Off",
         "noLabel": "No Label",
+        "previewDetails": "Preview details",
         "recursive": "Recursive",
         "showMetadata": "Show Metadata",
         "sortAscending": "Sort Ascending",
@@ -930,6 +931,8 @@
         "sortDescending": "Sort Descending",
         "thumbnailFit": "Thumbnail Fit",
         "thumbnailSize": "Thumbnail Size",
+        "thumbnailsPerRow": "Thumbnails per row",
+        "thumbnailStyle": "Thumbnail style",
         "title": "View Options"
       }
     },
@@ -950,6 +953,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Shutter Speed",
       "tooltipVirtualCopy": "Virtual Copy"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Always",
+        "hover": "On hover",
+        "never": "Never"
+      },
+      "fields": {
+        "aperture": "Aperture",
+        "camera": "Camera",
+        "dimensions": "Dimensions",
+        "edited": "Edited",
+        "fileName": "File",
+        "focalLength": "Focal length",
+        "iso": "ISO",
+        "label": "Color label",
+        "lens": "Lens",
+        "modified": "Modified",
+        "rating": "Rating",
+        "shutter": "Shutter",
+        "virtualCopy": "Virtual copy"
+      },
+      "hidePanel": "Hide preview panel",
+      "imagesPerPage": "Images per page",
+      "metadata": "Metadata",
+      "multipleValues": "Multiple values",
+      "nextPage": "Next preview page",
+      "no": "No",
+      "noSelection": "Select images to preview",
+      "previousPage": "Previous preview page",
+      "showPanel": "Show preview panel",
+      "thumbnailStyles": {
+        "below_filename": "Name below",
+        "hidden": "Name hidden",
+        "list": "List",
+        "name_over_image": "Name over image"
+      },
+      "title": "Preview",
+      "yes": "Yes"
     },
     "search": {
       "noResults": "No Results Found",
@@ -1007,7 +1049,8 @@
     "tooltips": {
       "communityPresets": "Community Presets",
       "goHome": "Go to Home",
-      "importImages": "Import Images"
+      "importImages": "Import Images",
+      "previewMode": "Preview mode"
     }
   },
   "masks": {
@@ -1455,7 +1498,9 @@
         "copy_files": "Copy selected file(s)",
         "cycle_zoom": "Cycle zoom (Fit, 2x Fit, 100%)",
         "delete_selected": "Delete selected file(s)",
+        "open_fullscreen_preview": "Open full-screen preview",
         "open_image": "Open selected image",
+        "open_loupe_preview": "Open loupe preview",
         "open_settings": "Open settings",
         "paste_adjustments": "Paste copied adjustments",
         "paste_files": "Paste file(s) to current folder",
@@ -1587,6 +1632,15 @@
       "livePreviewQualityDesc": "Controls the resolution and compression of the image while dragging sliders. Lower quality significantly improves responsiveness.",
       "livePreviews": "Live Interactive Previews",
       "livePreviewsDesc": "Update the preview immediately while dragging sliders. Disable this if the interface feels laggy during adjustments.",
+      "loupeRenderArea": "Loupe render area",
+      "loupeRenderAreaDesc": "Controls how large a source area is rendered around the loupe. Larger areas let the loupe move farther before re-rendering, but use more memory and take longer to render. Full image can be slow for large RAW files.",
+      "loupeRenderAreas": {
+        "1024": "Small — 1024 px",
+        "1536": "Medium — 1536 px",
+        "2048": "Large — 2048 px",
+        "3072": "Extra large — 3072 px",
+        "full": "Full image"
+      },
       "modes": {
         "dynamic": "Dynamic",
         "static": "Fixed Resolution"
@@ -1758,6 +1812,11 @@
       "filterLabel": "Image Files",
       "select": "Select",
       "selectImageFile": "Select an image file"
+    },
+    "loupe": {
+      "close": "Close",
+      "releaseToRenderArea": "Release to render this area",
+      "renderingRawCrop": "Rendering 1:1 RAW crop"
     },
     "lut": {
       "clearLut": "Clear LUT",

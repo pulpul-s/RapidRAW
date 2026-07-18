@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { homeDir } from '@tauri-apps/api/path';
 import { toast } from 'react-toastify';
@@ -8,10 +9,18 @@ import { useEditorStore } from '../store/useEditorStore';
 import { useUIStore } from '../store/useUIStore';
 import { useProcessStore } from '../store/useProcessStore';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { Invokes, LibraryViewMode, ImageFile } from '../components/ui/AppProperties';
+import { clearLoupeMemoryCaches, discardLoupesAndClearMemory, useLoupeStore } from '../store/useLoupeStore';
+import { Invokes, LibraryLayoutMode, LibraryViewMode, ImageFile } from '../components/ui/AppProperties';
 import { INITIAL_ADJUSTMENTS, normalizeLoadedAdjustments } from '../utils/adjustments';
 import { globalImageCache } from '../utils/ImageLRUCache';
+import { refreshPreservedLoupeTilesAfterEditor } from '../utils/loupeTileLoader';
 import { debouncedSave, debouncedSetHistory } from './useEditorActions';
+
+function discardPreviewLoupesIfNeeded() {
+  const hasPreviewWorkspace = useUIStore.getState().libraryLayoutMode === LibraryLayoutMode.Preview;
+  if (!hasPreviewWorkspace && useLoupeStore.getState().loupes.length === 0) return;
+  discardLoupesAndClearMemory();
+}
 
 export interface AppNavigationProps {
   clearThumbnailQueue: () => void;
@@ -42,6 +51,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
   } = refs;
 
   const handleGoHome = useCallback(() => {
+    discardPreviewLoupesIfNeeded();
     useLibraryStore.getState().setLibrary({
       rootPaths: [],
       currentFolderPath: null,
@@ -57,8 +67,8 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
   }, []);
 
   const handleBackToLibrary = useCallback(() => {
-    const { selectedImage, resetHistory, setEditor } = useEditorStore.getState();
-    const { setLibrary } = useLibraryStore.getState();
+    const { adjustments, selectedImage, resetHistory, setEditor } = useEditorStore.getState();
+    const { libraryActivePath, setLibrary } = useLibraryStore.getState();
     const { setUI } = useUIStore.getState();
 
     if (selectedImage?.path && cachedEditStateRef.current) {
@@ -72,7 +82,25 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
     debouncedSave.flush();
     debouncedSetHistory.cancel();
 
-    const lastActivePath = selectedImage?.path ?? null;
+    const lastActivePath = selectedImage?.path ?? libraryActivePath;
+    const {
+      libraryLayoutMode,
+      libraryPreviewRestoreSelectionPaths,
+      quickPreviewMode,
+      quickPreviewRestoreSelectionPaths,
+      quickPreviewRestoreWindowed,
+    } = useUIStore.getState();
+    const isPreviewFeatureReturn = quickPreviewMode || libraryLayoutMode === LibraryLayoutMode.Preview;
+    const restoreSelectionPaths = quickPreviewMode
+      ? quickPreviewRestoreSelectionPaths
+      : libraryPreviewRestoreSelectionPaths;
+
+    if (quickPreviewMode && quickPreviewRestoreWindowed) {
+      getCurrentWindow()
+        .setFullscreen(false)
+        .then(() => useUIStore.getState().setUI({ isWindowFullScreen: false }))
+        .catch((error) => console.error('Failed to restore windowed mode after quick preview:', error));
+    }
 
     setEditor({
       hasRenderedFirstFrame: false,
@@ -91,8 +119,34 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
 
     selectedImagePathRef.current = null;
 
-    setLibrary({ libraryActivePath: lastActivePath });
-    setUI({ slideDirection: 1 });
+    if (isPreviewFeatureReturn) {
+      setLibrary({
+        libraryActivePath: lastActivePath,
+        ...(restoreSelectionPaths.length > 0
+          ? {
+              multiSelectedPaths: restoreSelectionPaths,
+              selectionAnchorPath: lastActivePath || restoreSelectionPaths[0],
+            }
+          : {}),
+      });
+      setUI({
+        slideDirection: 1,
+        ...(quickPreviewMode ? { isFullScreen: false } : {}),
+        quickPreviewMode: false,
+        quickPreviewRestoreWindowed: false,
+        quickPreviewMetadataOverlay: null,
+        quickPreviewScopePaths: [],
+        quickPreviewRestoreSelectionPaths: [],
+        libraryPreviewRestoreSelectionPaths: [],
+      });
+
+      if (!quickPreviewMode && libraryLayoutMode === LibraryLayoutMode.Preview && selectedImage?.path) {
+        void refreshPreservedLoupeTilesAfterEditor(selectedImage.path, adjustments);
+      }
+    } else {
+      setLibrary({ libraryActivePath: lastActivePath });
+      setUI({ slideDirection: 1 });
+    }
 
     setEditor({ adjustments: INITIAL_ADJUSTMENTS });
     resetHistory(INITIAL_ADJUSTMENTS);
@@ -109,7 +163,23 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
     async (path: string) => {
       const { selectedImage, isSliderDragging, resetHistory, setEditor } = useEditorStore.getState();
       const { setLibrary } = useLibraryStore.getState();
-      const { setUI } = useUIStore.getState();
+      const uiState = useUIStore.getState();
+      const { setUI } = uiState;
+      const isQuickPreviewSelection = uiState.quickPreviewMode;
+      const isEnteringEditorFromPreview =
+        !selectedImage && uiState.libraryLayoutMode === LibraryLayoutMode.Preview && !uiState.quickPreviewMode;
+
+      if (isEnteringEditorFromPreview) {
+        const { multiSelectedPaths } = useLibraryStore.getState();
+        if (
+          uiState.libraryPreviewRestoreSelectionPaths.length === 0 &&
+          multiSelectedPaths.length > 1 &&
+          multiSelectedPaths.includes(path)
+        ) {
+          setUI({ libraryPreviewRestoreSelectionPaths: [...multiSelectedPaths] });
+        }
+        clearLoupeMemoryCaches();
+      }
 
       if (selectedImage?.path === path) return;
 
@@ -126,6 +196,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       const isCachedInBackend = isFrontendCached
         ? await invoke<boolean>('is_image_cached', { path }).catch(() => false)
         : false;
+      if (isQuickPreviewSelection && !useUIStore.getState().quickPreviewMode) return;
 
       const hasDifferentResolution =
         cached &&
@@ -273,6 +344,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       const libraryViewMode = appSettings?.libraryViewMode;
 
       if (!preserveEditor) {
+        discardPreviewLoupesIfNeeded();
         await invoke('cancel_thumbnail_generation');
         clearThumbnailQueue();
         setLibrary({ isViewLoading: true, activeAlbumId: null, libraryScrollTop: 0 });
@@ -400,6 +472,7 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       const { setUI } = useUIStore.getState();
 
       if (!preserveEditor) {
+        discardPreviewLoupesIfNeeded();
         await invoke('cancel_thumbnail_generation');
         clearThumbnailQueue();
         useLibraryStore.getState().setSearchCriteria({ tags: [], text: '', mode: 'OR' });

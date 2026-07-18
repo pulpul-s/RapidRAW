@@ -26,6 +26,18 @@ export const KEYBIND_DEFINITIONS: KeybindDefinition[] = [
     section: 'library',
   },
   {
+    action: 'open_fullscreen_preview',
+    description: 'settings.keybinds.actions.open_fullscreen_preview',
+    defaultCombo: ['shift', 'Space'],
+    section: 'library',
+  },
+  {
+    action: 'open_loupe_preview',
+    description: 'settings.keybinds.actions.open_loupe_preview',
+    defaultCombo: ['KeyZ'],
+    section: 'library',
+  },
+  {
     action: 'copy_files',
     description: 'settings.keybinds.actions.copy_files',
     defaultCombo: ['ctrl', 'shift', 'KeyC'],

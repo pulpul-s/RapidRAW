@@ -969,6 +969,7 @@
         "metadataHover": "Po najechaniu",
         "metadataOff": "Wyłączone",
         "noLabel": "Brak etykiety",
+        "previewDetails": "Szczegóły podglądu",
         "recursive": "Rekurencyjnie",
         "showMetadata": "Pokaż metadane",
         "sortAscending": "Sortuj rosnąco",
@@ -976,6 +977,8 @@
         "sortDescending": "Sortuj malejąco",
         "thumbnailFit": "Dopasowanie miniatury",
         "thumbnailSize": "Rozmiar miniatury",
+        "thumbnailsPerRow": "Miniatury w wierszu",
+        "thumbnailStyle": "Styl miniatur",
         "title": "Opcje widoku"
       }
     },
@@ -998,6 +1001,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Czas otwarcia migawki",
       "tooltipVirtualCopy": "Kopia wirtualna"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Zawsze",
+        "hover": "Po najechaniu",
+        "never": "Nigdy"
+      },
+      "fields": {
+        "aperture": "Przysłona",
+        "camera": "Aparat",
+        "dimensions": "Wymiary",
+        "edited": "Edytowany",
+        "fileName": "Plik",
+        "focalLength": "Ogniskowa",
+        "iso": "ISO",
+        "label": "Etykieta",
+        "lens": "Obiektyw",
+        "modified": "Zmodyfikowany",
+        "rating": "Ocena",
+        "shutter": "Migawka",
+        "virtualCopy": "Kopia wirtualna"
+      },
+      "hidePanel": "Ukryj panel podglądu",
+      "imagesPerPage": "Obrazy na stronę",
+      "metadata": "Metadane",
+      "multipleValues": "Wiele wartości",
+      "nextPage": "Następna strona podglądu",
+      "no": "Nie",
+      "noSelection": "Wybierz obrazy do podglądu",
+      "previousPage": "Poprzednia strona podglądu",
+      "showPanel": "Pokaż panel podglądu",
+      "thumbnailStyles": {
+        "below_filename": "Nazwa poniżej",
+        "hidden": "Nazwa ukryta",
+        "list": "Lista",
+        "name_over_image": "Nazwa na obrazie"
+      },
+      "title": "Podgląd",
+      "yes": "Tak"
     },
     "search": {
       "noResults": "Nie znaleziono wyników",
@@ -1055,7 +1097,8 @@
     "tooltips": {
       "communityPresets": "Presety społeczności",
       "goHome": "Przejdź do strony głównej",
-      "importImages": "Importuj obrazy"
+      "importImages": "Importuj obrazy",
+      "previewMode": "Tryb podglądu"
     }
   },
   "masks": {
@@ -1521,7 +1564,9 @@
         "copy_files": "Skopiuj wybrane pliki",
         "cycle_zoom": "Przełącz przybliżenie (Dopasuj, 2x Dopasuj, 100%)",
         "delete_selected": "Usuń wybrane pliki",
+        "open_fullscreen_preview": "Otwórz podgląd pełnoekranowy",
         "open_image": "Otwórz wybrany obraz",
+        "open_loupe_preview": "Otwórz podgląd lupy",
         "open_settings": "Otwórz ustawienia",
         "paste_adjustments": "Wklej skopiowane ustawienia",
         "paste_files": "Wklej pliki do bieżącego folderu",
@@ -1653,6 +1698,15 @@
       "livePreviewQualityDesc": "Zarządza rozdzielczością i kompresją obrazu podczas przesuwania suwaków. Niższa jakość znacząco poprawia czas reakcji.",
       "livePreviews": "Interaktywny podgląd na żywo",
       "livePreviewsDesc": "Podgląd jest aktualizowany natychmiast podczas przesuwania suwaków. Wyłącz to ustawienie, jeśli interfejs zacina się w trakcie edycji.",
+      "loupeRenderArea": "Obszar renderowania lupy",
+      "loupeRenderAreaDesc": "Określa rozmiar obszaru źródłowego renderowanego wokół lupy. Większe obszary pozwalają przesuwać lupę dalej bez ponownego renderowania, ale zużywają więcej pamięci i renderują się dłużej. Pełny obraz może być wolny przy dużych plikach RAW.",
+      "loupeRenderAreas": {
+        "1024": "Mały — 1024 px",
+        "1536": "Średni — 1536 px",
+        "2048": "Duży — 2048 px",
+        "3072": "Bardzo duży — 3072 px",
+        "full": "Pełny obraz"
+      },
       "modes": {
         "dynamic": "Dynamiczny",
         "static": "Stała rozdzielczość"
@@ -1826,6 +1880,11 @@
       "filterLabel": "Pliki obrazów",
       "select": "Wybierz",
       "selectImageFile": "Wybierz plik obrazu"
+    },
+    "loupe": {
+      "close": "Zamknij",
+      "releaseToRenderArea": "Puść, aby wyrenderować ten obszar",
+      "renderingRawCrop": "Renderowanie wycinka RAW 1:1"
     },
     "lut": {
       "clearLut": "Wyczyść LUT",

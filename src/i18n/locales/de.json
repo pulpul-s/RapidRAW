@@ -923,6 +923,7 @@
         "metadataHover": "Beim Darüberfahren",
         "metadataOff": "Aus",
         "noLabel": "Keine Markierung",
+        "previewDetails": "Vorschaudetails",
         "recursive": "Rekursiv",
         "showMetadata": "Metadaten anzeigen",
         "sortAscending": "Aufsteigend sortieren",
@@ -930,6 +931,8 @@
         "sortDescending": "Absteigend sortieren",
         "thumbnailFit": "Miniaturansicht Einpassen",
         "thumbnailSize": "Miniaturbildgröße",
+        "thumbnailsPerRow": "Miniaturen pro Zeile",
+        "thumbnailStyle": "Miniaturstil",
         "title": "Ansichtsoptionen"
       }
     },
@@ -950,6 +953,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Verschlusszeit",
       "tooltipVirtualCopy": "Virtuelle Kopie"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Immer",
+        "hover": "Beim Darüberfahren",
+        "never": "Nie"
+      },
+      "fields": {
+        "aperture": "Blende",
+        "camera": "Kamera",
+        "dimensions": "Abmessungen",
+        "edited": "Bearbeitet",
+        "fileName": "Datei",
+        "focalLength": "Brennweite",
+        "iso": "ISO",
+        "label": "Farbmarkierung",
+        "lens": "Objektiv",
+        "modified": "Geändert",
+        "rating": "Bewertung",
+        "shutter": "Verschlusszeit",
+        "virtualCopy": "Virtuelle Kopie"
+      },
+      "hidePanel": "Vorschaufenster ausblenden",
+      "imagesPerPage": "Bilder pro Seite",
+      "metadata": "Metadaten",
+      "multipleValues": "Mehrere Werte",
+      "nextPage": "Nächste Vorschauseite",
+      "no": "Nein",
+      "noSelection": "Bilder für die Vorschau auswählen",
+      "previousPage": "Vorherige Vorschauseite",
+      "showPanel": "Vorschaufenster anzeigen",
+      "thumbnailStyles": {
+        "below_filename": "Name darunter",
+        "hidden": "Name ausblenden",
+        "list": "Liste",
+        "name_over_image": "Name auf dem Bild"
+      },
+      "title": "Vorschau",
+      "yes": "Ja"
     },
     "search": {
       "noResults": "Keine Ergebnisse gefunden",
@@ -1007,7 +1049,8 @@
     "tooltips": {
       "communityPresets": "Community-Vorgaben",
       "goHome": "Zur Startseite",
-      "importImages": "Bilder importieren"
+      "importImages": "Bilder importieren",
+      "previewMode": "Vorschaumodus"
     }
   },
   "masks": {
@@ -1455,7 +1498,9 @@
         "copy_files": "Ausgewählte Datei(en) kopieren",
         "cycle_zoom": "Zoom durchwechseln (Einpassen, 2x Einpassen, 100%)",
         "delete_selected": "Ausgewählte Datei(en) löschen",
+        "open_fullscreen_preview": "Vollbildvorschau öffnen",
         "open_image": "Ausgewähltes Bild öffnen",
+        "open_loupe_preview": "Lupenvorschau öffnen",
         "open_settings": "Einstellungen öffnen",
         "paste_adjustments": "Kopierte Anpassungen einfügen",
         "paste_files": "Datei(en) in aktuellen Ordner einfügen",
@@ -1587,6 +1632,15 @@
       "livePreviewQualityDesc": "Steuert die Auflösung beim Ziehen von Reglern. Niedrigere Qualität verbessert die Reaktionsfähigkeit erheblich.",
       "livePreviews": "Interaktive Live-Vorschauen",
       "livePreviewsDesc": "Aktualisiert die Vorschau sofort beim Ziehen von Reglern. Deaktivieren, wenn die Oberfläche beim Anpassen träge ist.",
+      "loupeRenderArea": "Lupen-Renderbereich",
+      "loupeRenderAreaDesc": "Legt fest, wie groß der Quellbereich ist, der um die Lupe gerendert wird. Größere Bereiche lassen die Lupe weiter bewegen, bevor neu gerendert werden muss, nutzen aber mehr Speicher und brauchen länger. Das vollständige Bild kann bei großen RAW-Dateien langsam sein.",
+      "loupeRenderAreas": {
+        "1024": "Klein — 1024 px",
+        "1536": "Mittel — 1536 px",
+        "2048": "Groß — 2048 px",
+        "3072": "Sehr groß — 3072 px",
+        "full": "Vollständiges Bild"
+      },
       "modes": {
         "dynamic": "Dynamisch",
         "static": "Feste Auflösung"
@@ -1758,6 +1812,11 @@
       "filterLabel": "Bilddateien",
       "select": "Auswählen",
       "selectImageFile": "Eine Bilddatei auswählen"
+    },
+    "loupe": {
+      "close": "Schließen",
+      "releaseToRenderArea": "Loslassen, um diesen Bereich zu rendern",
+      "renderingRawCrop": "1:1-RAW-Ausschnitt wird gerendert"
     },
     "lut": {
       "clearLut": "LUT löschen",

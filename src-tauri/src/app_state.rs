@@ -137,6 +137,29 @@ impl MetadataManager {
 
 pub type TransformedImageCache = (u64, Arc<DynamicImage>, (f32, f32));
 
+pub struct ThumbnailGeometryCacheEntry {
+    pub geometry_hash: u64,
+    pub image: DynamicImage,
+    pub scale: f32,
+    pub is_full_resolution: bool,
+}
+
+pub struct RuntimePreviewCacheEntry {
+    pub jpg_path: PathBuf,
+    pub json_path: PathBuf,
+}
+
+pub struct RuntimePreviewCache {
+    pub run_dir: PathBuf,
+    pub library_dir: PathBuf,
+    pub loupe_dir: PathBuf,
+    pub library_entries: VecDeque<RuntimePreviewCacheEntry>,
+    pub loupe_entries: VecDeque<RuntimePreviewCacheEntry>,
+    pub active_loupe_jpg_paths: HashSet<PathBuf>,
+    pub library_locks: HashMap<String, Arc<Mutex<()>>>,
+    pub loupe_locks: HashMap<String, Arc<Mutex<()>>>,
+}
+
 pub struct AppState {
     pub window_setup_complete: AtomicBool,
     pub gpu_crash_flag_path: Mutex<Option<PathBuf>>,
@@ -162,11 +185,16 @@ pub struct AppState {
     pub mask_cache: Mutex<HashMap<u64, GrayImage>>,
     pub patch_cache: Mutex<HashMap<String, serde_json::Value>>,
     pub geometry_cache: Mutex<HashMap<u64, DynamicImage>>,
-    pub thumbnail_geometry_cache: Mutex<HashMap<String, (u64, DynamicImage, f32)>>,
+    pub thumbnail_geometry_cache: Mutex<HashMap<String, ThumbnailGeometryCacheEntry>>,
+    pub runtime_preview_cache: Mutex<Option<RuntimePreviewCache>>,
+    pub loupe_render_semaphore: Arc<tokio::sync::Semaphore>,
+    pub loupe_render_generation: AtomicUsize,
+    pub loupe_decoded_cache_keys: Mutex<HashSet<String>>,
     pub lens_db: Mutex<Option<Arc<LensDatabase>>>,
     pub load_image_generation: Arc<AtomicUsize>,
     pub full_warped_cache: Mutex<Option<(u64, Arc<DynamicImage>)>>,
     pub full_transformed_cache: Mutex<Option<TransformedImageCache>>,
+    pub loupe_transformed_cache: Mutex<Vec<TransformedImageCache>>,
     pub decoded_image_cache: Mutex<DecodedImageCache>,
     pub thumbnail_manager: Arc<ThumbnailManager>,
     pub metadata_manager: Arc<MetadataManager>,

@@ -1,7 +1,15 @@
-import { type RefObject, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  type RefObject,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import clsx from 'clsx';
+import { Star } from 'lucide-react';
 
 import Editor from '../panel/Editor';
 import BottomBar from '../panel/BottomBar';
@@ -20,6 +28,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { useProcessStore } from '../../store/useProcessStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { getColorLabelForTags } from '../../utils/adjustments';
 
 import { ImageFile, Orientation, Panel, ThumbnailAspectRatio } from '../ui/AppProperties';
 
@@ -39,6 +48,13 @@ const panelVariants: any = {
     y: direction === 0 ? 0 : direction > 0 ? 20 : -20,
   }),
 };
+
+const QUICK_PREVIEW_HUD_VISIBLE_MS = 1800;
+const QUICK_PREVIEW_SPINNER_DELAY_MS = 120;
+
+function getBaseName(path: string) {
+  return path.split(/[\\/]/).pop()?.split('?vc=')[0] || path;
+}
 
 interface EditorViewProps {
   transformWrapperRef: RefObject<any>;
@@ -85,14 +101,18 @@ export default function EditorView({
   handleRightPanelSelect,
   requestThumbnails,
 }: EditorViewProps) {
-  const { selectedImage } = useEditorStore(
+  const { selectedImage, finalPreviewUrl, hasRenderedFirstFrame } = useEditorStore(
     useShallow((state) => ({
       selectedImage: state.selectedImage,
+      finalPreviewUrl: state.finalPreviewUrl,
+      hasRenderedFirstFrame: state.hasRenderedFirstFrame,
     })),
   );
 
   const {
     isFullScreen,
+    quickPreviewMode,
+    quickPreviewMetadataOverlay,
     isInstantTransition,
     uiVisibility,
     bottomPanelHeight,
@@ -104,6 +124,8 @@ export default function EditorView({
   } = useUIStore(
     useShallow((state) => ({
       isFullScreen: state.isFullScreen,
+      quickPreviewMode: state.quickPreviewMode,
+      quickPreviewMetadataOverlay: state.quickPreviewMetadataOverlay,
       isInstantTransition: state.isInstantTransition,
       uiVisibility: state.uiVisibility,
       bottomPanelHeight: state.bottomPanelHeight,
@@ -140,13 +162,194 @@ export default function EditorView({
     })),
   );
 
-  const editorNode = (
-    <Editor
-      onBackToLibrary={handleBackToLibrary}
-      onContextMenu={handleEditorContextMenu}
-      transformWrapperRef={transformWrapperRef}
-    />
+  const [isQuickPreviewHudVisible, setIsQuickPreviewHudVisible] = useState(false);
+  const [ratingHudOverride, setRatingHudOverride] = useState<{ path: string; rating: number } | null>(null);
+  const quickPreviewHudTimerRef = useRef<number | null>(null);
+  const quickPreviewSpinnerTimerRef = useRef<number | null>(null);
+  const quickPreviewSpinnerTargetRef = useRef<string | null>(null);
+  const processedQuickPreviewMetadataSequenceRef = useRef<number | null>(null);
+  const [isQuickPreviewSpinnerVisible, setIsQuickPreviewSpinnerVisible] = useState(false);
+
+  const selectedFileName = selectedImage ? getBaseName(selectedImage.path) : '';
+
+  const displayedQuickPreviewRating = selectedImage
+    ? ratingHudOverride?.path === selectedImage.path
+      ? ratingHudOverride.rating
+      : imageRatings[selectedImage.path] || 0
+    : 0;
+
+  const selectedLibraryImage = useLibraryStore((state) =>
+    selectedImage ? state.imageList.find((image) => image.path === selectedImage.path) : undefined,
   );
+
+  const quickPreviewColorLabel = getColorLabelForTags(selectedLibraryImage?.tags);
+
+  const revealQuickPreviewHud = useCallback(
+    (ratingOverride?: { path: string; rating: number }) => {
+      if (!quickPreviewMode || !selectedImage) return;
+
+      if (ratingOverride) {
+        setRatingHudOverride(ratingOverride);
+      }
+
+      setIsQuickPreviewHudVisible(true);
+
+      if (quickPreviewHudTimerRef.current) window.clearTimeout(quickPreviewHudTimerRef.current);
+      quickPreviewHudTimerRef.current = window.setTimeout(() => {
+        setIsQuickPreviewHudVisible(false);
+        setRatingHudOverride(null);
+      }, QUICK_PREVIEW_HUD_VISIBLE_MS);
+    },
+    [quickPreviewMode, selectedImage?.path],
+  );
+
+  useEffect(() => {
+    if (!quickPreviewMode || !selectedImage) {
+      setIsQuickPreviewHudVisible(false);
+      setRatingHudOverride(null);
+      processedQuickPreviewMetadataSequenceRef.current = null;
+      return;
+    }
+
+    setRatingHudOverride(null);
+    revealQuickPreviewHud();
+  }, [quickPreviewMode, revealQuickPreviewHud, selectedImage?.path]);
+
+  useEffect(() => {
+    if (!quickPreviewMode || !quickPreviewMetadataOverlay || quickPreviewMetadataOverlay.path !== selectedImage?.path) {
+      return;
+    }
+
+    if (processedQuickPreviewMetadataSequenceRef.current === quickPreviewMetadataOverlay.sequence) {
+      return;
+    }
+
+    processedQuickPreviewMetadataSequenceRef.current = quickPreviewMetadataOverlay.sequence;
+    revealQuickPreviewHud({ path: quickPreviewMetadataOverlay.path, rating: quickPreviewMetadataOverlay.rating });
+  }, [quickPreviewMode, quickPreviewMetadataOverlay, revealQuickPreviewHud, selectedImage?.path]);
+
+  useEffect(
+    () => () => {
+      if (quickPreviewHudTimerRef.current) window.clearTimeout(quickPreviewHudTimerRef.current);
+    },
+    [],
+  );
+
+  const clearQuickPreviewSpinner = useCallback(() => {
+    if (quickPreviewSpinnerTimerRef.current) {
+      window.clearTimeout(quickPreviewSpinnerTimerRef.current);
+      quickPreviewSpinnerTimerRef.current = null;
+    }
+    quickPreviewSpinnerTargetRef.current = null;
+    setIsQuickPreviewSpinnerVisible(false);
+  }, []);
+
+  useEffect(() => {
+    const useWgpuRenderer = appSettings?.useWgpuRenderer !== false;
+    const isQuickPreviewImageReady = useWgpuRenderer
+      ? !!selectedImage?.isReady && hasRenderedFirstFrame
+      : !!finalPreviewUrl;
+    const spinnerTarget =
+      quickPreviewMode && selectedImage ? `${useWgpuRenderer ? 'wgpu' : 'preview'}:${selectedImage.path}` : null;
+
+    if (!spinnerTarget || isQuickPreviewImageReady) {
+      clearQuickPreviewSpinner();
+      return;
+    }
+
+    if (quickPreviewSpinnerTargetRef.current === spinnerTarget) {
+      return;
+    }
+
+    if (quickPreviewSpinnerTimerRef.current) {
+      window.clearTimeout(quickPreviewSpinnerTimerRef.current);
+      quickPreviewSpinnerTimerRef.current = null;
+    }
+
+    quickPreviewSpinnerTargetRef.current = spinnerTarget;
+    setIsQuickPreviewSpinnerVisible(false);
+    quickPreviewSpinnerTimerRef.current = window.setTimeout(() => {
+      if (quickPreviewSpinnerTargetRef.current === spinnerTarget) {
+        setIsQuickPreviewSpinnerVisible(true);
+      }
+      quickPreviewSpinnerTimerRef.current = null;
+    }, QUICK_PREVIEW_SPINNER_DELAY_MS);
+  }, [
+    appSettings?.useWgpuRenderer,
+    clearQuickPreviewSpinner,
+    finalPreviewUrl,
+    hasRenderedFirstFrame,
+    quickPreviewMode,
+    selectedImage?.isReady,
+    selectedImage?.path,
+  ]);
+
+  useEffect(
+    () => () => {
+      if (quickPreviewSpinnerTimerRef.current) window.clearTimeout(quickPreviewSpinnerTimerRef.current);
+    },
+    [],
+  );
+
+  const quickPreviewHud =
+    quickPreviewMode && selectedImage ? (
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <AnimatePresence>
+          {isQuickPreviewHudVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="absolute bottom-5 left-5 rounded-2xl border border-white/15 bg-black/65 px-3 py-2 text-white shadow-2xl backdrop-blur-xl"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0" aria-label={`${displayedQuickPreviewRating} / 5`}>
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <Star
+                      key={index}
+                      size={18}
+                      className={clsx(
+                        'transition-colors duration-150',
+                        index < displayedQuickPreviewRating
+                          ? 'text-accent fill-accent drop-shadow'
+                          : 'text-white/45 fill-transparent',
+                      )}
+                    />
+                  ))}
+                </div>
+                {quickPreviewColorLabel && (
+                  <div
+                    className="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/25"
+                    style={{ backgroundColor: quickPreviewColorLabel.color }}
+                  />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isQuickPreviewHudVisible && selectedFileName && (
+            <motion.div
+              key={selectedFileName}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="absolute bottom-5 right-5 max-w-[50vw] truncate rounded-2xl border border-white/15 bg-black/55 px-4 py-2.5 text-sm font-medium text-white/90 shadow-2xl backdrop-blur-xl"
+            >
+              {selectedFileName}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    ) : null;
+
+  const quickPreviewSpinner =
+    quickPreviewMode && isQuickPreviewSpinnerVisible ? (
+      <div className="pointer-events-none absolute top-4 right-4 z-40 h-3 w-3 rounded-full border border-white/60 border-t-transparent opacity-70 animate-spin" />
+    ) : null;
 
   const editorBottomBarComponent = (
     <BottomBar
@@ -246,8 +449,17 @@ export default function EditorView({
 
   return (
     <div className={clsx('flex grow h-full min-h-0', isCompactPortrait ? 'flex-col gap-2' : 'flex-row')}>
-      <div className={clsx('flex-1 flex flex-col min-w-0', isCompactPortrait && 'min-h-0')}>
-        {editorNode}
+      <div
+        className={clsx('flex-1 flex flex-col min-w-0', isCompactPortrait && 'min-h-0', quickPreviewMode && 'relative')}
+        onPointerMove={quickPreviewMode ? () => revealQuickPreviewHud() : undefined}
+      >
+        <Editor
+          onBackToLibrary={handleBackToLibrary}
+          onContextMenu={handleEditorContextMenu}
+          transformWrapperRef={transformWrapperRef}
+        />
+        {quickPreviewHud}
+        {quickPreviewSpinner}
         {!isCompactPortrait && editorBottomBarNode}
       </div>
       <div

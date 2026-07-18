@@ -26,7 +26,11 @@
       "capabilities": ["default"],
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPCACHE/thumbnails/*"]
+        "scope": [
+          "$APPCACHE/thumbnails/*",
+          "$APPCACHE/runtime-previews/*/library/*",
+          "$APPCACHE/runtime-previews/*/loupe/*"
+        ]
       }
     },
     "macOSPrivateApi": true

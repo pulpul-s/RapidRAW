@@ -31,10 +31,11 @@ const ThumbnailComponent = ({
   isEdited,
   exif,
   isCloudPlaceholder,
+  exifOverlay: exifOverlayOverride,
 }: any) => {
   const { t } = useTranslation();
   const data = useProcessStore((s) => s.thumbnails[path]);
-  const exifOverlay = useSettingsStore((s) => s.appSettings?.exifOverlay || ExifOverlay.Off);
+  const exifOverlay = useSettingsStore((s) => exifOverlayOverride ?? s.appSettings?.exifOverlay ?? ExifOverlay.Off);
   const displayEditIcon = useSettingsStore((s) => s.appSettings?.displayEditIcon ?? true);
   const showEditIcon = isEdited && displayEditIcon;
 

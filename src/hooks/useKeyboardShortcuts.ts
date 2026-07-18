@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { ImageFile, Panel, ExifOverlay } from '../components/ui/AppProperties';
+import {
+  ExifOverlay,
+  ImageFile,
+  LibraryLayoutMode,
+  LibraryPreviewThumbnailStyle,
+  Panel,
+} from '../components/ui/AppProperties';
 import { KEYBIND_DEFINITIONS, normalizeCombo } from '../utils/keyboardUtils';
 import { useEditorStore } from '../store/useEditorStore';
 import { useLibraryStore } from '../store/useLibraryStore';
@@ -8,11 +14,61 @@ import { useUIStore } from '../store/useUIStore';
 import { useProcessStore } from '../store/useProcessStore';
 import { useEditorActions } from './useEditorActions';
 import { useLibraryActions } from './useLibraryActions';
+import { useLoupeStore } from '../store/useLoupeStore';
+import { revealLibraryPreviewThumbnail } from '../utils/libraryPreviewEvents';
+import { getPreviewLoupeShortcutTargetPath, openPreviewLoupe } from '../utils/previewLoupeActions';
+import { canToggleQuickPreviewFromShortcut, toggleQuickPreviewFromShortcut } from '../utils/quickPreviewActions';
+
+type PreviewNavigationTile = {
+  path: string;
+  rect: DOMRect;
+};
+
+const PREVIEW_ROW_TOP_TOLERANCE_PX = 2;
+
+function getVerticalPreviewNavigationPath(activePath: string, direction: -1 | 1): string | null {
+  const tiles = Array.from(document.querySelectorAll<HTMLElement>('[data-rapidraw-preview-image-path]'))
+    .map((element): PreviewNavigationTile | null => {
+      const path = element.dataset.rapidrawPreviewImagePath;
+      return path ? { path, rect: element.getBoundingClientRect() } : null;
+    })
+    .filter((tile): tile is PreviewNavigationTile => !!tile);
+  const activeTile = tiles.find((tile) => tile.path === activePath);
+  if (!activeTile) return null;
+
+  const rowCandidates = tiles.filter((tile) =>
+    direction < 0
+      ? tile.rect.top < activeTile.rect.top - PREVIEW_ROW_TOP_TOLERANCE_PX
+      : tile.rect.top > activeTile.rect.top + PREVIEW_ROW_TOP_TOLERANCE_PX,
+  );
+  if (rowCandidates.length === 0) return null;
+
+  const targetRowTop =
+    direction < 0
+      ? Math.max(...rowCandidates.map((tile) => tile.rect.top))
+      : Math.min(...rowCandidates.map((tile) => tile.rect.top));
+  const activeCenterX = activeTile.rect.left + activeTile.rect.width / 2;
+  const targetRow = rowCandidates.filter(
+    (tile) => Math.abs(tile.rect.top - targetRowTop) <= PREVIEW_ROW_TOP_TOLERANCE_PX,
+  );
+  const targetCenters = targetRow.map((tile) => tile.rect.left + tile.rect.width / 2);
+  const targetRowCenterX = (Math.min(...targetCenters) + Math.max(...targetCenters)) / 2;
+
+  return (
+    targetRow.sort((first, second) => {
+      const firstCenterX = first.rect.left + first.rect.width / 2;
+      const secondCenterX = second.rect.left + second.rect.width / 2;
+      const distanceDifference = Math.abs(firstCenterX - activeCenterX) - Math.abs(secondCenterX - activeCenterX);
+      if (Math.abs(distanceDifference) > 0.5) return distanceDifference;
+      return activeCenterX > targetRowCenterX ? secondCenterX - firstCenterX : firstCenterX - secondCenterX;
+    })[0]?.path || null
+  );
+}
 
 interface KeyboardShortcutsProps {
   sortedImageList: Array<ImageFile>;
   handleBackToLibrary(): void;
-  handleDeleteSelected(): void;
+  handleDeleteSelected(paths?: string[]): void;
   handleImageSelect(path: string): void;
   handlePasteFiles(str: string): void;
   handleToggleFullScreen(): void;
@@ -44,6 +100,21 @@ export const useKeyboardShortcuts = ({
       settings: useSettingsStore.getState(),
       process: useProcessStore.getState(),
     });
+    type StoreState = ReturnType<typeof getStoreState>;
+
+    const getPreviewActionTargetPaths = (s: StoreState): string[] | undefined => {
+      if (s.ui.quickPreviewMode && s.editor.selectedImage?.path) {
+        return [s.editor.selectedImage.path];
+      }
+      if (
+        !s.editor.selectedImage &&
+        s.ui.libraryLayoutMode === LibraryLayoutMode.Preview &&
+        s.ui.libraryPreviewActivePath
+      ) {
+        return [s.ui.libraryPreviewActivePath];
+      }
+      return undefined;
+    };
 
     const comboMap = new Map<string, string>();
     const keybinds = useSettingsStore.getState().appSettings?.keybinds;
@@ -64,25 +135,44 @@ export const useKeyboardShortcuts = ({
           handleImageSelect(s.library.libraryActivePath!);
         },
       },
+      open_fullscreen_preview: {
+        shouldFire: () => canToggleQuickPreviewFromShortcut(),
+        execute: async (e: KeyboardEvent) => {
+          e.preventDefault();
+          await toggleQuickPreviewFromShortcut({
+            handleBackToLibrary,
+            handleImageSelect,
+            sortedImageList: sortedListRef.current,
+          });
+        },
+      },
+      open_loupe_preview: {
+        shouldFire: () => !!getPreviewLoupeShortcutTargetPath(),
+        execute: (e: KeyboardEvent) => {
+          e.preventDefault();
+          openPreviewLoupe(getPreviewLoupeShortcutTargetPath());
+        },
+      },
       copy_adjustments: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleCopyAdjustments();
+          handleCopyAdjustments(getPreviewActionTargetPaths(s)?.[0]);
         },
       },
       paste_adjustments: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handlePasteAdjustments();
+          handlePasteAdjustments(getPreviewActionTargetPaths(s));
         },
       },
       copy_files: {
-        shouldFire: (s: any) => s.library.multiSelectedPaths.length > 0,
+        shouldFire: (s: any) => !!getPreviewActionTargetPaths(s) || s.library.multiSelectedPaths.length > 0,
         execute: (e: any, s: any) => {
           e.preventDefault();
-          s.process.setProcess({ copiedFilePaths: s.library.multiSelectedPaths });
+          const targetPaths = getPreviewActionTargetPaths(s);
+          s.process.setProcess({ copiedFilePaths: targetPaths || s.library.multiSelectedPaths });
         },
       },
       paste_files: {
@@ -104,15 +194,22 @@ export const useKeyboardShortcuts = ({
       },
       delete_selected: {
         shouldFire: (s: any) => !s.editor.activeMaskContainerId && !s.editor.activeAiPatchContainerId,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleDeleteSelected();
+          handleDeleteSelected(getPreviewActionTargetPaths(s));
         },
       },
       preview_prev: {
         shouldFire: (s: any) => !!s.editor.selectedImage,
         execute: (e: any, s: any) => {
           e.preventDefault();
+          if (s.ui.quickPreviewMode && s.ui.quickPreviewScopePaths?.length > 0) {
+            const currentIndex = s.ui.quickPreviewScopePaths.indexOf(s.editor.selectedImage!.path);
+            if (currentIndex === -1) return;
+            const nextIndex = currentIndex - 1 < 0 ? s.ui.quickPreviewScopePaths.length - 1 : currentIndex - 1;
+            handleImageSelect(s.ui.quickPreviewScopePaths[nextIndex]);
+            return;
+          }
           const currentIndex = sortedListRef.current.findIndex((img) => img.path === s.editor.selectedImage!.path);
           if (currentIndex === -1) return;
           let nextIndex = currentIndex - 1 < 0 ? sortedListRef.current.length - 1 : currentIndex - 1;
@@ -123,6 +220,13 @@ export const useKeyboardShortcuts = ({
         shouldFire: (s: any) => !!s.editor.selectedImage,
         execute: (e: any, s: any) => {
           e.preventDefault();
+          if (s.ui.quickPreviewMode && s.ui.quickPreviewScopePaths?.length > 0) {
+            const currentIndex = s.ui.quickPreviewScopePaths.indexOf(s.editor.selectedImage!.path);
+            if (currentIndex === -1) return;
+            const nextIndex = currentIndex + 1 >= s.ui.quickPreviewScopePaths.length ? 0 : currentIndex + 1;
+            handleImageSelect(s.ui.quickPreviewScopePaths[nextIndex]);
+            return;
+          }
           const currentIndex = sortedListRef.current.findIndex((img) => img.path === s.editor.selectedImage!.path);
           if (currentIndex === -1) return;
           let nextIndex = currentIndex + 1 >= sortedListRef.current.length ? 0 : currentIndex + 1;
@@ -354,86 +458,86 @@ export const useKeyboardShortcuts = ({
       },
       rate_0: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(0);
+          handleRate(0, getPreviewActionTargetPaths(s));
         },
       },
       rate_1: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(1);
+          handleRate(1, getPreviewActionTargetPaths(s));
         },
       },
       rate_2: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(2);
+          handleRate(2, getPreviewActionTargetPaths(s));
         },
       },
       rate_3: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(3);
+          handleRate(3, getPreviewActionTargetPaths(s));
         },
       },
       rate_4: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(4);
+          handleRate(4, getPreviewActionTargetPaths(s));
         },
       },
       rate_5: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleRate(5);
+          handleRate(5, getPreviewActionTargetPaths(s));
         },
       },
       color_label_none: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel(null);
+          handleSetColorLabel(null, getPreviewActionTargetPaths(s));
         },
       },
       color_label_red: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel('red');
+          handleSetColorLabel('red', getPreviewActionTargetPaths(s));
         },
       },
       color_label_yellow: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel('yellow');
+          handleSetColorLabel('yellow', getPreviewActionTargetPaths(s));
         },
       },
       color_label_green: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel('green');
+          handleSetColorLabel('green', getPreviewActionTargetPaths(s));
         },
       },
       color_label_blue: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel('blue');
+          handleSetColorLabel('blue', getPreviewActionTargetPaths(s));
         },
       },
       color_label_purple: {
         shouldFire: () => true,
-        execute: (e: any) => {
+        execute: (e: any, s: StoreState) => {
           e.preventDefault();
-          handleSetColorLabel('purple');
+          handleSetColorLabel('purple', getPreviewActionTargetPaths(s));
         },
       },
       brush_size_up: {
@@ -468,6 +572,13 @@ export const useKeyboardShortcuts = ({
           else if (s.editor.activeMaskId) s.editor.setEditor({ activeMaskId: null });
           else if (s.editor.activeMaskContainerId) s.editor.setEditor({ activeMaskContainerId: null });
           else if (s.ui.activeRightPanel === Panel.Crop) s.ui.setRightPanel(Panel.Adjustments);
+          else if (
+            !s.editor.selectedImage &&
+            s.ui.libraryLayoutMode === LibraryLayoutMode.Preview &&
+            useLoupeStore.getState().loupes.length > 0
+          )
+            useLoupeStore.getState().closeTopLoupe();
+          else if (s.ui.quickPreviewMode) handleBackToLibrary();
           else if (s.ui.isFullScreen) handleToggleFullScreen();
           else if (s.editor.selectedImage) handleBackToLibrary();
         },
@@ -506,6 +617,84 @@ export const useKeyboardShortcuts = ({
         execute: (e: KeyboardEvent, s: any) => {
           e.preventDefault();
           const isNext = e.code === 'ArrowRight' || e.code === 'ArrowDown';
+
+          if (s.ui.libraryLayoutMode === LibraryLayoutMode.Preview) {
+            const selectedSet = new Set(s.library.multiSelectedPaths);
+            const orderedPreviewSelection = sortedListRef.current.filter((image) => selectedSet.has(image.path));
+            const pageSize = Math.max(1, Math.round(s.ui.libraryPreviewPageSize || 1));
+            const pageCount = Math.max(1, Math.ceil(orderedPreviewSelection.length / pageSize));
+            const currentPage = Math.min(Math.max(s.ui.libraryPreviewPageIndex || 0, 0), pageCount - 1);
+            const visiblePreviewPaths = new Set(
+              orderedPreviewSelection
+                .slice(currentPage * pageSize, currentPage * pageSize + pageSize)
+                .map((image) => image.path),
+            );
+            const previewActivePath = s.ui.libraryPreviewActivePath;
+
+            if (previewActivePath && visiblePreviewPaths.has(previewActivePath)) {
+              const currentIndex = orderedPreviewSelection.findIndex((image) => image.path === previewActivePath);
+              if (currentIndex === -1) return;
+
+              const isVertical = e.code === 'ArrowUp' || e.code === 'ArrowDown';
+              let nextIndex: number;
+
+              if (isVertical) {
+                const verticalPath = getVerticalPreviewNavigationPath(previewActivePath, e.code === 'ArrowUp' ? -1 : 1);
+                const verticalIndex = verticalPath
+                  ? orderedPreviewSelection.findIndex((image) => image.path === verticalPath)
+                  : -1;
+
+                if (verticalIndex >= 0) {
+                  nextIndex = verticalIndex;
+                } else if (e.code === 'ArrowDown') {
+                  nextIndex = ((currentPage + 1) % pageCount) * pageSize;
+                } else {
+                  const previousPage = (currentPage - 1 + pageCount) % pageCount;
+                  nextIndex = Math.min((previousPage + 1) * pageSize, orderedPreviewSelection.length) - 1;
+                }
+              } else {
+                nextIndex = currentIndex + (e.code === 'ArrowLeft' ? -1 : 1);
+              }
+
+              while (nextIndex >= orderedPreviewSelection.length) nextIndex -= orderedPreviewSelection.length;
+              while (nextIndex < 0) nextIndex += orderedPreviewSelection.length;
+              const nextImage = orderedPreviewSelection[nextIndex];
+
+              if (nextImage) {
+                const nextPage = Math.floor(nextIndex / pageSize);
+                if (nextPage !== currentPage) useLoupeStore.getState().closeAllLoupes();
+                s.library.setLibrary({ libraryActivePath: nextImage.path, selectionAnchorPath: nextImage.path });
+                s.ui.setUI({
+                  libraryPreviewActivePath: nextImage.path,
+                  libraryPreviewPageIndex: nextPage,
+                });
+                revealLibraryPreviewThumbnail(nextImage.path);
+              }
+              return;
+            }
+
+            const activePath = s.library.libraryActivePath;
+            if (!activePath || sortedListRef.current.length === 0) return;
+            const currentIndex = sortedListRef.current.findIndex((img) => img.path === activePath);
+            if (currentIndex === -1) return;
+
+            const columns =
+              s.ui.libraryPreviewThumbnailStyle === LibraryPreviewThumbnailStyle.List
+                ? 1
+                : Math.max(1, Math.min(6, Math.round(s.ui.libraryPreviewThumbnailsPerRow || 1)));
+            const delta =
+              e.code === 'ArrowLeft' ? -1 : e.code === 'ArrowRight' ? 1 : e.code === 'ArrowUp' ? -columns : columns;
+            let nextIndex = currentIndex + delta;
+            while (nextIndex >= sortedListRef.current.length) nextIndex -= sortedListRef.current.length;
+            while (nextIndex < 0) nextIndex += sortedListRef.current.length;
+            const nextImage = sortedListRef.current[nextIndex];
+            if (nextImage) {
+              s.library.setLibrary({ libraryActivePath: nextImage.path, multiSelectedPaths: [nextImage.path] });
+              revealLibraryPreviewThumbnail(nextImage.path);
+            }
+            return;
+          }
+
           const activePath = s.library.libraryActivePath;
           if (!activePath || sortedListRef.current.length === 0) return;
           const currentIndex = sortedListRef.current.findIndex((img) => img.path === activePath);

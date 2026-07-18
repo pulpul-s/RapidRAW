@@ -191,6 +191,12 @@ impl DecodedImageCache {
         self.items.clear();
     }
 
+    pub fn remove(&mut self, path: &str) {
+        if let Some(pos) = self.items.iter().position(|(p, _, _)| p == path) {
+            self.items.remove(pos);
+        }
+    }
+
     pub fn insert(
         &mut self,
         path: String,
@@ -207,9 +213,44 @@ impl DecodedImageCache {
 }
 
 #[tauri::command]
+pub async fn clear_loupe_caches(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    state
+        .loupe_render_generation
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+
+    let _permit = state
+        .loupe_render_semaphore
+        .clone()
+        .acquire_owned()
+        .await
+        .map_err(|_| "Loupe render queue closed.".to_string())?;
+
+    let loupe_decoded_cache_keys: Vec<String> = state
+        .loupe_decoded_cache_keys
+        .lock()
+        .map_err(|_| "Loupe decoded cache key tracker is unavailable.".to_string())?
+        .drain()
+        .collect();
+
+    if let Ok(mut decoded_cache) = state.decoded_image_cache.lock() {
+        for key in loupe_decoded_cache_keys {
+            decoded_cache.remove(&key);
+        }
+    }
+    if let Ok(mut transformed_cache) = state.loupe_transformed_cache.lock() {
+        transformed_cache.clear();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn clear_image_caches(state: tauri::State<AppState>) {
     if let Ok(mut decoded_cache) = state.decoded_image_cache.lock() {
         decoded_cache.clear();
+    }
+    if let Ok(mut loupe_decoded_cache_keys) = state.loupe_decoded_cache_keys.lock() {
+        loupe_decoded_cache_keys.clear();
     }
     if let Ok(mut gpu_cache) = state.gpu_image_cache.lock() {
         *gpu_cache = None;
@@ -222,6 +263,9 @@ pub fn clear_image_caches(state: tauri::State<AppState>) {
     }
     if let Ok(mut transformed_cache) = state.full_transformed_cache.lock() {
         *transformed_cache = None;
+    }
+    if let Ok(mut loupe_cache) = state.loupe_transformed_cache.lock() {
+        loupe_cache.clear();
     }
 }
 

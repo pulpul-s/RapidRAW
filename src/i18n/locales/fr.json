@@ -946,6 +946,7 @@
         "metadataHover": "Au survol",
         "metadataOff": "Désactivé",
         "noLabel": "Aucune étiquette",
+        "previewDetails": "Détails de l’aperçu",
         "recursive": "Récursif",
         "showMetadata": "Afficher les métadonnées",
         "sortAscending": "Trier par ordre croissant",
@@ -953,6 +954,8 @@
         "sortDescending": "Trier par ordre décroissant",
         "thumbnailFit": "Ajustement de la miniature",
         "thumbnailSize": "Taille de la miniature",
+        "thumbnailsPerRow": "Vignettes par ligne",
+        "thumbnailStyle": "Style des vignettes",
         "title": "Options d'affichage"
       }
     },
@@ -974,6 +977,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "Vitesse d'obturation",
       "tooltipVirtualCopy": "Copie virtuelle"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "Toujours",
+        "hover": "Au survol",
+        "never": "Jamais"
+      },
+      "fields": {
+        "aperture": "Ouverture",
+        "camera": "Appareil photo",
+        "dimensions": "Dimensions",
+        "edited": "Retouché",
+        "fileName": "Fichier",
+        "focalLength": "Longueur focale",
+        "iso": "ISO",
+        "label": "Étiquette",
+        "lens": "Objectif",
+        "modified": "Modifié",
+        "rating": "Note",
+        "shutter": "Vitesse d’obturation",
+        "virtualCopy": "Copie virtuelle"
+      },
+      "hidePanel": "Masquer le panneau d’aperçu",
+      "imagesPerPage": "Images par page",
+      "metadata": "Métadonnées",
+      "multipleValues": "Valeurs multiples",
+      "nextPage": "Page d’aperçu suivante",
+      "no": "Non",
+      "noSelection": "Sélectionnez des images à prévisualiser",
+      "previousPage": "Page d’aperçu précédente",
+      "showPanel": "Afficher le panneau d’aperçu",
+      "thumbnailStyles": {
+        "below_filename": "Nom en dessous",
+        "hidden": "Nom masqué",
+        "list": "Liste",
+        "name_over_image": "Nom sur l’image"
+      },
+      "title": "Aperçu",
+      "yes": "Oui"
     },
     "search": {
       "noResults": "Aucun résultat trouvé",
@@ -1031,7 +1073,8 @@
     "tooltips": {
       "communityPresets": "Paramètres prédéfinis de la communauté",
       "goHome": "Aller à l'accueil",
-      "importImages": "Importer des images"
+      "importImages": "Importer des images",
+      "previewMode": "Mode aperçu"
     }
   },
   "masks": {
@@ -1488,7 +1531,9 @@
         "copy_files": "Copier le(s) fichier(s) sélectionné(s)",
         "cycle_zoom": "Faire défiler le zoom (Ajuster, 2x Ajuster, 100%)",
         "delete_selected": "Supprimer le(s) fichier(s) sélectionné(s)",
+        "open_fullscreen_preview": "Ouvrir l’aperçu en plein écran",
         "open_image": "Ouvrir l'image sélectionnée",
+        "open_loupe_preview": "Ouvrir l’aperçu loupe",
         "open_settings": "Ouvrir les paramètres",
         "paste_adjustments": "Coller les ajustements copiés",
         "paste_files": "Coller le(s) fichier(s) dans le dossier actuel",
@@ -1620,6 +1665,15 @@
       "livePreviewQualityDesc": "Contrôle la résolution et la compression de l'image lorsque vous glissez les curseurs. Une qualité inférieure améliore considérablement la réactivité.",
       "livePreviews": "Aperçus interactifs en direct",
       "livePreviewsDesc": "Mettre à jour l'aperçu immédiatement lorsque vous glissez les curseurs. Désactivez ceci si l'interface semble lente lors des ajustements.",
+      "loupeRenderArea": "Zone de rendu de la loupe",
+      "loupeRenderAreaDesc": "Définit la taille de la zone source rendue autour de la loupe. Les zones plus grandes permettent de déplacer la loupe plus loin avant un nouveau rendu, mais utilisent plus de mémoire et prennent plus de temps. L’image complète peut être lente avec de gros fichiers RAW.",
+      "loupeRenderAreas": {
+        "1024": "Petite — 1024 px",
+        "1536": "Moyenne — 1536 px",
+        "2048": "Grande — 2048 px",
+        "3072": "Très grande — 3072 px",
+        "full": "Image complète"
+      },
       "modes": {
         "dynamic": "Dynamique",
         "static": "Résolution fixe"
@@ -1792,6 +1846,11 @@
       "filterLabel": "Fichiers image",
       "select": "Sélectionner",
       "selectImageFile": "Sélectionner un fichier image"
+    },
+    "loupe": {
+      "close": "Fermer",
+      "releaseToRenderArea": "Relâchez pour effectuer le rendu de cette zone",
+      "renderingRawCrop": "Rendu du recadrage RAW 1:1"
     },
     "lut": {
       "clearLut": "Effacer LUT",

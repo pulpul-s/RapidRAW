@@ -921,6 +921,7 @@
         "metadataHover": "마우스 오버 시",
         "metadataOff": "끄기",
         "noLabel": "레이블 없음",
+        "previewDetails": "미리보기 세부 정보",
         "recursive": "하위 폴더 포함",
         "showMetadata": "메타데이터 표시",
         "sortAscending": "오름차순 정렬",
@@ -928,6 +929,8 @@
         "sortDescending": "내림차순 정렬",
         "thumbnailFit": "썸네일 맞춤",
         "thumbnailSize": "썸네일 크기",
+        "thumbnailsPerRow": "행당 썸네일 수",
+        "thumbnailStyle": "썸네일 스타일",
         "title": "보기 옵션"
       }
     },
@@ -948,6 +951,45 @@
       "tooltipIso": "ISO",
       "tooltipShutterSpeed": "셔터 속도",
       "tooltipVirtualCopy": "가상 복사본"
+    },
+    "preview": {
+      "detailsModes": {
+        "always": "항상",
+        "hover": "마우스를 올리면",
+        "never": "표시 안 함"
+      },
+      "fields": {
+        "aperture": "조리개",
+        "camera": "카메라",
+        "dimensions": "크기",
+        "edited": "편집됨",
+        "fileName": "파일",
+        "focalLength": "초점 거리",
+        "iso": "ISO",
+        "label": "라벨",
+        "lens": "렌즈",
+        "modified": "수정됨",
+        "rating": "평점",
+        "shutter": "셔터",
+        "virtualCopy": "가상 사본"
+      },
+      "hidePanel": "미리보기 패널 숨기기",
+      "imagesPerPage": "페이지당 이미지 수",
+      "metadata": "메타데이터",
+      "multipleValues": "여러 값",
+      "nextPage": "다음 미리보기 페이지",
+      "no": "아니요",
+      "noSelection": "미리볼 이미지를 선택하세요",
+      "previousPage": "이전 미리보기 페이지",
+      "showPanel": "미리보기 패널 표시",
+      "thumbnailStyles": {
+        "below_filename": "아래에 이름",
+        "hidden": "이름 숨김",
+        "list": "목록",
+        "name_over_image": "이미지 위에 이름"
+      },
+      "title": "미리보기",
+      "yes": "예"
     },
     "search": {
       "noResults": "결과를 찾을 수 없습니다",
@@ -1005,7 +1047,8 @@
     "tooltips": {
       "communityPresets": "커뮤니티 프리셋",
       "goHome": "홈으로 이동",
-      "importImages": "이미지 가져오기"
+      "importImages": "이미지 가져오기",
+      "previewMode": "미리보기 모드"
     }
   },
   "masks": {
@@ -1453,7 +1496,9 @@
         "copy_files": "선택한 파일 복사",
         "cycle_zoom": "확대/축소 순환 (맞춤, 2배 맞춤, 100%)",
         "delete_selected": "선택한 파일 삭제",
+        "open_fullscreen_preview": "전체 화면 미리보기 열기",
         "open_image": "선택한 이미지 열기",
+        "open_loupe_preview": "루페 미리보기 열기",
         "open_settings": "설정 열기",
         "paste_adjustments": "복사한 조정값 붙여넣기",
         "paste_files": "현재 폴더에 파일 붙여넣기",
@@ -1585,6 +1630,15 @@
       "livePreviewQualityDesc": "슬라이더를 드래그하는 동안 이미지의 해상도와 압축을 제어합니다. 품질이 낮을수록 응답성이 크게 향상됩니다.",
       "livePreviews": "실시간 인터랙티브 미리보기",
       "livePreviewsDesc": "슬라이더를 드래그하는 동안 미리보기를 즉시 업데이트합니다. 조정 중에 인터페이스가 끊긴다고 느껴지면 비활성화하세요.",
+      "loupeRenderArea": "루페 렌더 영역",
+      "loupeRenderAreaDesc": "루페 주변에 렌더링할 원본 영역의 크기를 설정합니다. 영역이 클수록 다시 렌더링하기 전에 루페를 더 멀리 이동할 수 있지만 메모리 사용량이 늘고 렌더링 시간이 길어집니다. 전체 이미지는 큰 RAW 파일에서 느릴 수 있습니다.",
+      "loupeRenderAreas": {
+        "1024": "작게 — 1024 px",
+        "1536": "중간 — 1536 px",
+        "2048": "크게 — 2048 px",
+        "3072": "매우 크게 — 3072 px",
+        "full": "전체 이미지"
+      },
       "modes": {
         "dynamic": "동적",
         "static": "고정 해상도"
@@ -1756,6 +1810,11 @@
       "filterLabel": "이미지 파일",
       "select": "선택",
       "selectImageFile": "이미지 파일 선택"
+    },
+    "loupe": {
+      "close": "닫기",
+      "releaseToRenderArea": "놓아서 이 영역 렌더링",
+      "renderingRawCrop": "1:1 RAW 크롭 렌더링 중"
     },
     "lut": {
       "clearLut": "LUT 지우기",

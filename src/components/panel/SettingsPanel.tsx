@@ -45,6 +45,7 @@ import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
 import { useOsPlatform } from '../../hooks/useOsPlatform';
 import { open } from '@tauri-apps/plugin-shell';
+import { LOUPE_RENDER_AREAS, LOUPE_RENDER_AREA_DEFAULT, type LoupeRenderArea } from '../../utils/loupeRenderArea';
 
 interface ConfirmModalState {
   confirmText: string;
@@ -537,6 +538,7 @@ export default function SettingsPanel({
     linuxGpuOptimization: appSettings?.linuxGpuOptimization ?? false,
     highResZoomMultiplier: appSettings?.highResZoomMultiplier || 1.0,
     useFullDpiRendering: appSettings?.useFullDpiRendering ?? false,
+    loupeRenderArea: appSettings?.loupeRenderArea || LOUPE_RENDER_AREA_DEFAULT,
     useWgpuRenderer:
       appSettings?.useWgpuRenderer ?? (osPlatform === 'linux' || osPlatform === 'android' ? false : true),
     thumbnailWorkerThreads: appSettings?.thumbnailWorkerThreads ?? 4,
@@ -567,6 +569,15 @@ export default function SettingsPanel({
       { value: 'high', label: t('settings.processing.qualities.high') },
       { value: 'performance', label: t('settings.processing.qualities.performance') },
     ],
+    [t],
+  );
+
+  const loupeRenderAreaOptions = useMemo<OptionItem<LoupeRenderArea>[]>(
+    () =>
+      LOUPE_RENDER_AREAS.map((value) => ({
+        value,
+        label: t(`settings.processing.loupeRenderAreas.${value}`),
+      })),
     [t],
   );
 
@@ -645,6 +656,7 @@ export default function SettingsPanel({
       linuxGpuOptimization: appSettings?.linuxGpuOptimization ?? false,
       highResZoomMultiplier: appSettings?.highResZoomMultiplier || 1.0,
       useFullDpiRendering: appSettings?.useFullDpiRendering ?? false,
+      loupeRenderArea: appSettings?.loupeRenderArea || LOUPE_RENDER_AREA_DEFAULT,
       useWgpuRenderer: appSettings?.useWgpuRenderer ?? true,
       thumbnailWorkerThreads: appSettings?.thumbnailWorkerThreads ?? 4,
       imageCacheSize: appSettings?.imageCacheSize ?? 5,
@@ -1777,6 +1789,20 @@ export default function SettingsPanel({
                             </motion.div>
                           )}
                         </AnimatePresence>
+                      </div>
+
+                      <div className="mt-3 pl-4 border-l-2 border-border-color ml-1">
+                        <SettingItem
+                          description={t('settings.processing.loupeRenderAreaDesc')}
+                          label={t('settings.processing.loupeRenderArea')}
+                        >
+                          <Dropdown
+                            onChange={(value) => handleProcessingSettingChange('loupeRenderArea', value)}
+                            options={loupeRenderAreaOptions}
+                            value={processingSettings.loupeRenderArea}
+                            triggerClassName="bg-bg-primary"
+                          />
+                        </SettingItem>
                       </div>
                     </div>
 

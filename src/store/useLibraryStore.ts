@@ -10,6 +10,17 @@ import {
 import { Adjustments, INITIAL_ADJUSTMENTS } from '../utils/adjustments';
 import { ColumnWidths } from '../components/panel/MainLibrary';
 
+interface LibraryHoverTarget {
+  path: string;
+  fileName: string;
+  itemRect: { x: number; y: number; width: number; height: number };
+  imageRect: { x: number; y: number; width: number; height: number };
+  pointer: { clientX: number; clientY: number };
+  imageAspectRatio: number | null;
+  objectFit: 'cover' | 'contain';
+  thumbnailUrl: string | null;
+}
+
 export interface SearchCriteria {
   tags: string[];
   text: string;
@@ -36,6 +47,7 @@ interface LibraryState {
   selectionAnchorPath: string | null;
   libraryActivePath: string | null;
   libraryActiveAdjustments: Adjustments;
+  hoverTarget: LibraryHoverTarget | null;
 
   // Sorting & Filtering
   sortCriteria: SortCriteria;
@@ -73,6 +85,7 @@ export const useLibraryStore = create<LibraryState>((set) => ({
   selectionAnchorPath: null,
   libraryActivePath: null,
   libraryActiveAdjustments: INITIAL_ADJUSTMENTS,
+  hoverTarget: null,
 
   sortCriteria: { key: 'name', order: SortDirection.Ascending },
   filterCriteria: { colors: [], rating: 0, rawStatus: RawStatus.All },
@@ -95,7 +108,7 @@ export const useLibraryStore = create<LibraryState>((set) => ({
 
   setLibrary: (updater) => set((state) => (typeof updater === 'function' ? updater(state) : updater)),
 
-  clearSelection: () => set({ multiSelectedPaths: [], libraryActivePath: null }),
+  clearSelection: () => set({ multiSelectedPaths: [], libraryActivePath: null, hoverTarget: null }),
 
   setFilterCriteria: (criteria) =>
     set((state) => ({

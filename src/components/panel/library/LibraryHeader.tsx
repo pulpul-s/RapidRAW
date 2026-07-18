@@ -18,16 +18,20 @@ import {
   FilterCriteria,
   RawStatus,
   EditedStatus,
+  LibraryLayoutMode,
   LibraryViewMode,
   SortCriteria,
   SortDirection,
   ExifOverlay,
+  LibraryPreviewDetailsMode,
+  LibraryPreviewThumbnailStyle,
 } from '../../ui/AppProperties';
 import { COLOR_LABELS, Color } from '../../../utils/adjustments';
 import Text from '../../ui/Text';
 import { TextColors, TextVariants, TextWeights, TEXT_COLOR_KEYS } from '../../../types/typography';
 import Button from '../../ui/Button';
 import { useSettingsStore } from '../../../store/useSettingsStore';
+import { useUIStore } from '../../../store/useUIStore';
 import { ADVANCED_QUERY_REGEX } from '../../../hooks/useSortedLibrary';
 
 function DropdownMenu({ buttonContent, buttonTitle, children, contentClassName = 'w-56' }: any) {
@@ -329,6 +333,28 @@ export function ViewOptionsDropdown({
     })),
   );
 
+  const {
+    libraryLayoutMode,
+    libraryPreviewThumbnailAspectRatio,
+    libraryPreviewExifOverlay,
+    libraryPreviewThumbnailStyle,
+    libraryPreviewDetailsMode,
+    setUI,
+  } = useUIStore(
+    useShallow((state) => ({
+      libraryLayoutMode: state.libraryLayoutMode,
+      libraryPreviewThumbnailAspectRatio: state.libraryPreviewThumbnailAspectRatio,
+      libraryPreviewExifOverlay: state.libraryPreviewExifOverlay,
+      libraryPreviewThumbnailStyle: state.libraryPreviewThumbnailStyle,
+      libraryPreviewDetailsMode: state.libraryPreviewDetailsMode,
+      setUI: state.setUI,
+    })),
+  );
+
+  const isPreviewMode = libraryLayoutMode === LibraryLayoutMode.Preview;
+  const selectedThumbnailAspectRatio = isPreviewMode ? libraryPreviewThumbnailAspectRatio : thumbnailAspectRatio;
+  const selectedExifOverlay = isPreviewMode ? libraryPreviewExifOverlay : appSettings?.exifOverlay || ExifOverlay.Off;
+
   const isFilterActive =
     filterCriteria.rating !== 0 ||
     (filterCriteria.rawStatus && filterCriteria.rawStatus !== RawStatus.All) ||
@@ -342,6 +368,31 @@ export function ViewOptionsDropdown({
       { id: ExifOverlay.Off, label: t('library.header.viewOptions.metadataOff') },
       { id: ExifOverlay.Hover, label: t('library.header.viewOptions.metadataHover') },
       { id: ExifOverlay.Always, label: t('library.header.viewOptions.metadataAlways') },
+    ],
+    [t],
+  );
+
+  const previewThumbnailStyleOptions = useMemo(
+    () => [
+      {
+        id: LibraryPreviewThumbnailStyle.BelowFilename,
+        label: t('library.preview.thumbnailStyles.below_filename'),
+      },
+      {
+        id: LibraryPreviewThumbnailStyle.NameOverImage,
+        label: t('library.preview.thumbnailStyles.name_over_image'),
+      },
+      { id: LibraryPreviewThumbnailStyle.Hidden, label: t('library.preview.thumbnailStyles.hidden') },
+      { id: LibraryPreviewThumbnailStyle.List, label: t('library.preview.thumbnailStyles.list') },
+    ],
+    [t],
+  );
+
+  const previewDetailsOptions = useMemo(
+    () => [
+      { id: LibraryPreviewDetailsMode.Always, label: t('library.preview.detailsModes.always') },
+      { id: LibraryPreviewDetailsMode.Hover, label: t('library.preview.detailsModes.hover') },
+      { id: LibraryPreviewDetailsMode.Never, label: t('library.preview.detailsModes.never') },
     ],
     [t],
   );
@@ -389,30 +440,59 @@ export function ViewOptionsDropdown({
         <div className="library-view-options-section w-1/4 p-2 border-r border-border-color">
           <>
             <Text as="div" variant={TextVariants.small} weight={TextWeights.semibold} className="px-3 py-2 uppercase">
-              {t('library.header.viewOptions.thumbnailSize')}
+              {isPreviewMode
+                ? t('library.header.viewOptions.thumbnailStyle')
+                : t('library.header.viewOptions.thumbnailSize')}
             </Text>
-            {thumbnailSizeOptions.map((option: any) => {
-              const isSelected = thumbnailSize === option.id;
-              return (
-                <button
-                  className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
-                    isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
-                  }`}
-                  key={option.id}
-                  onClick={() => onSelectSize(option.id)}
-                  role="menuitem"
-                >
-                  <Text
-                    variant={TextVariants.label}
-                    color={TextColors.primary}
-                    weight={isSelected ? TextWeights.semibold : TextWeights.normal}
+            {isPreviewMode ? (
+              <>
+                {previewThumbnailStyleOptions.map((option) => {
+                  const isSelected = libraryPreviewThumbnailStyle === option.id;
+                  return (
+                    <button
+                      className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
+                        isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
+                      }`}
+                      key={option.id}
+                      onClick={() => setUI({ libraryPreviewThumbnailStyle: option.id })}
+                      role="menuitem"
+                    >
+                      <Text
+                        variant={TextVariants.label}
+                        color={TextColors.primary}
+                        weight={isSelected ? TextWeights.semibold : TextWeights.normal}
+                      >
+                        {option.label}
+                      </Text>
+                      {isSelected && <Check size={16} className={TEXT_COLOR_KEYS[TextColors.primary]} />}
+                    </button>
+                  );
+                })}
+              </>
+            ) : (
+              thumbnailSizeOptions.map((option: any) => {
+                const isSelected = thumbnailSize === option.id;
+                return (
+                  <button
+                    className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
+                      isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
+                    }`}
+                    key={option.id}
+                    onClick={() => onSelectSize(option.id)}
+                    role="menuitem"
                   >
-                    {option.label}
-                  </Text>
-                  {isSelected && <Check size={16} className={TEXT_COLOR_KEYS[TextColors.primary]} />}
-                </button>
-              );
-            })}
+                    <Text
+                      variant={TextVariants.label}
+                      color={TextColors.primary}
+                      weight={isSelected ? TextWeights.semibold : TextWeights.normal}
+                    >
+                      {option.label}
+                    </Text>
+                    {isSelected && <Check size={16} className={TEXT_COLOR_KEYS[TextColors.primary]} />}
+                  </button>
+                );
+              })
+            )}
           </>
 
           <div className="pt-2">
@@ -421,14 +501,18 @@ export function ViewOptionsDropdown({
                 {t('library.header.viewOptions.thumbnailFit')}
               </Text>
               {thumbnailAspectRatioOptions.map((option: any) => {
-                const isSelected = thumbnailAspectRatio === option.id;
+                const isSelected = selectedThumbnailAspectRatio === option.id;
                 return (
                   <button
                     className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
                       isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
                     }`}
                     key={option.id}
-                    onClick={() => onSelectAspectRatio(option.id)}
+                    onClick={() =>
+                      isPreviewMode
+                        ? setUI({ libraryPreviewThumbnailAspectRatio: option.id })
+                        : onSelectAspectRatio(option.id)
+                    }
                     role="menuitem"
                   >
                     <Text
@@ -494,14 +578,18 @@ export function ViewOptionsDropdown({
               {t('library.header.viewOptions.showMetadata')}
             </Text>
             {metadataOptions.map((option) => {
-              const isSelected = (appSettings?.exifOverlay || ExifOverlay.Off) === option.id;
+              const isSelected = selectedExifOverlay === option.id;
               return (
                 <button
                   key={option.id}
                   className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
                     isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
                   }`}
-                  onClick={() => handleSettingsChange({ ...appSettings!, exifOverlay: option.id })}
+                  onClick={() =>
+                    isPreviewMode
+                      ? setUI({ libraryPreviewExifOverlay: option.id })
+                      : handleSettingsChange({ ...appSettings!, exifOverlay: option.id })
+                  }
                 >
                   <Text
                     variant={TextVariants.label}
@@ -515,6 +603,36 @@ export function ViewOptionsDropdown({
               );
             })}
           </div>
+
+          {isPreviewMode && (
+            <div className="pt-2">
+              <Text as="div" variant={TextVariants.small} weight={TextWeights.semibold} className="px-3 py-2 uppercase">
+                {t('library.header.viewOptions.previewDetails')}
+              </Text>
+              {previewDetailsOptions.map((option) => {
+                const isSelected = libraryPreviewDetailsMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors duration-150 ${
+                      isSelected ? 'bg-card-active' : 'hover:bg-bg-primary'
+                    }`}
+                    onClick={() => setUI({ libraryPreviewDetailsMode: option.id })}
+                    role="menuitem"
+                  >
+                    <Text
+                      variant={TextVariants.label}
+                      color={TextColors.primary}
+                      weight={isSelected ? TextWeights.semibold : TextWeights.normal}
+                    >
+                      {option.label}
+                    </Text>
+                    {isSelected && <Check size={16} className={TEXT_COLOR_KEYS[TextColors.primary]} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="library-view-options-section w-2/4 p-2 border-r border-border-color">

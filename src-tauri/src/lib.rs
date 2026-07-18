@@ -32,7 +32,9 @@ mod negative_conversion;
 mod panorama_stitching;
 mod panorama_utils;
 mod preset_converter;
+mod preview_rendering;
 mod raw_processing;
+mod runtime_preview_cache;
 mod tagging;
 mod tagging_utils;
 mod window_customizer;
@@ -2076,6 +2078,9 @@ pub fn run() {
             }
 
             setup_logging(&app_handle);
+            if let Err(error) = runtime_preview_cache::initialize(&app_handle, &state) {
+                log::warn!("Failed to initialize runtime preview cache: {}", error);
+            }
 
             if let Some(backend) = &settings.processing_backend
                 && backend != "auto" {
@@ -2280,17 +2285,27 @@ pub fn run() {
             patch_cache: Mutex::new(HashMap::new()),
             geometry_cache: Mutex::new(HashMap::new()),
             thumbnail_geometry_cache: Mutex::new(HashMap::new()),
+            runtime_preview_cache: Mutex::new(None),
+            loupe_render_semaphore: Arc::new(tokio::sync::Semaphore::new(
+                preview_rendering::LOUPE_RENDER_CONCURRENCY,
+            )),
+            loupe_render_generation: AtomicUsize::new(0),
+            loupe_decoded_cache_keys: Mutex::new(std::collections::HashSet::new()),
             lens_db: Mutex::new(None),
             load_image_generation: Arc::new(AtomicUsize::new(0)),
             full_warped_cache: Mutex::new(None),
             full_transformed_cache: Mutex::new(None),
+            loupe_transformed_cache: Mutex::new(Vec::new()),
             decoded_image_cache: Mutex::new(DecodedImageCache::new(5)),
             thumbnail_manager: ThumbnailManager::new(),
             metadata_manager: MetadataManager::new(),
         })
         .invoke_handler(tauri::generate_handler![
             apply_adjustments,
+            preview_rendering::generate_loupe_tile,
+            preview_rendering::set_active_loupe_preview_paths,
             generate_preview_for_path,
+            preview_rendering::generate_library_preview_for_path,
             generate_original_transformed_preview,
             generate_preset_preview,
             generate_uncropped_preview,
@@ -2315,6 +2330,7 @@ pub fn run() {
             android_integration::resolve_android_content_uri_name,
             cache_utils::clear_session_caches,
             cache_utils::clear_image_caches,
+            cache_utils::clear_loupe_caches,
             app_settings::load_settings,
             app_settings::save_settings,
             ai_commands::generate_ai_subject_mask,
@@ -2410,6 +2426,7 @@ pub fn run() {
                 }
                 tauri::RunEvent::ExitRequested { api, .. } => {
                     api.prevent_exit();
+                    runtime_preview_cache::cleanup_current_run(app_handle);
 
                     #[cfg(target_os = "macos")]
                     unsafe { libc::_exit(0); }
@@ -2418,6 +2435,8 @@ pub fn run() {
                     std::process::exit(0);
                 }
                 tauri::RunEvent::Exit => {
+                    runtime_preview_cache::cleanup_current_run(app_handle);
+
                     #[cfg(target_os = "macos")]
                     unsafe { libc::_exit(0); }
 

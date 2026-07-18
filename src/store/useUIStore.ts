@@ -1,5 +1,23 @@
 import { create } from 'zustand';
-import { ImageFile, LibraryViewMode, Panel, UiVisibility, CullingSuggestions } from '../components/ui/AppProperties';
+import {
+  ImageFile,
+  LibraryViewMode,
+  ExifOverlay,
+  LibraryLayoutMode,
+  Panel,
+  UiVisibility,
+  CullingSuggestions,
+  ThumbnailAspectRatio,
+  LibraryPreviewDetailsMode,
+  LibraryPreviewThumbnailStyle,
+} from '../components/ui/AppProperties';
+
+export const LIBRARY_PREVIEW_DEFAULT_PAGE_SIZE = 16;
+export const LIBRARY_PREVIEW_MIN_PAGE_SIZE = 1;
+export const LIBRARY_PREVIEW_MAX_PAGE_SIZE = 64;
+
+export const clampLibraryPreviewPageSize = (value: number): number =>
+  Math.min(LIBRARY_PREVIEW_MAX_PAGE_SIZE, Math.max(LIBRARY_PREVIEW_MIN_PAGE_SIZE, Math.round(value)));
 
 const RIGHT_PANEL_ORDER = [
   Panel.Metadata,
@@ -31,6 +49,12 @@ export interface ConfirmModalState {
 export interface CollageModalState {
   isOpen: boolean;
   sourceImages: Array<Pick<ImageFile, 'path'>>;
+}
+
+interface QuickPreviewMetadataOverlayState {
+  path: string;
+  rating: number;
+  sequence: number;
 }
 
 export interface PanoramaModalState {
@@ -79,18 +103,37 @@ interface UIState {
   // View & Layout
   activeView: string;
   isFullScreen: boolean;
+  quickPreviewMode: boolean;
+  quickPreviewRestoreWindowed: boolean;
+  quickPreviewMetadataOverlay: QuickPreviewMetadataOverlayState | null;
+  quickPreviewScopePaths: Array<string>;
+  quickPreviewRestoreSelectionPaths: Array<string>;
+  libraryPreviewRestoreSelectionPaths: Array<string>;
   isWindowFullScreen: boolean;
   isInstantTransition: boolean;
   isLayoutReady: boolean;
   uiVisibility: UiVisibility;
   isLibraryExportPanelVisible: boolean;
   isSettingsOpen: boolean;
+  libraryLayoutMode: LibraryLayoutMode;
 
   // Dimensions
   leftPanelWidth: number;
   rightPanelWidth: number;
   bottomPanelHeight: number;
   compactEditorPanelHeightOverride: number | null;
+  libraryPreviewRightPanelWidth: number;
+  libraryPreviewMetadataHeight: number;
+  libraryPreviewThumbnailsPerRow: number;
+  libraryPreviewPageSize: number;
+  libraryPreviewThumbnailAspectRatio: ThumbnailAspectRatio;
+  libraryPreviewExifOverlay: ExifOverlay;
+  libraryPreviewThumbnailStyle: LibraryPreviewThumbnailStyle;
+  libraryPreviewDetailsMode: LibraryPreviewDetailsMode;
+  libraryPreviewActivePath: string | null;
+  libraryPreviewPageIndex: number;
+  libraryPreviewThumbnailScrollTop: number;
+  libraryPreviewMetadataScrollTop: number;
 
   // Right Panel
   activeRightPanel: Panel | null;
@@ -134,17 +177,36 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
   activeView: 'library',
   isFullScreen: false,
+  quickPreviewMode: false,
+  quickPreviewRestoreWindowed: false,
+  quickPreviewMetadataOverlay: null,
+  quickPreviewScopePaths: [],
+  quickPreviewRestoreSelectionPaths: [],
+  libraryPreviewRestoreSelectionPaths: [],
   isWindowFullScreen: false,
   isInstantTransition: false,
   isLayoutReady: false,
-  uiVisibility: { folderTree: true, filmstrip: true },
+  uiVisibility: { folderTree: true, filmstrip: true, libraryPreviewPanel: true },
   isLibraryExportPanelVisible: false,
   isSettingsOpen: false,
+  libraryLayoutMode: LibraryLayoutMode.Grid,
 
   leftPanelWidth: 256,
   rightPanelWidth: 320,
   bottomPanelHeight: 144,
   compactEditorPanelHeightOverride: null,
+  libraryPreviewRightPanelWidth: 280,
+  libraryPreviewMetadataHeight: 160,
+  libraryPreviewThumbnailsPerRow: 4,
+  libraryPreviewPageSize: LIBRARY_PREVIEW_DEFAULT_PAGE_SIZE,
+  libraryPreviewThumbnailAspectRatio: ThumbnailAspectRatio.Contain,
+  libraryPreviewExifOverlay: ExifOverlay.Off,
+  libraryPreviewThumbnailStyle: LibraryPreviewThumbnailStyle.BelowFilename,
+  libraryPreviewDetailsMode: LibraryPreviewDetailsMode.Hover,
+  libraryPreviewActivePath: null,
+  libraryPreviewPageIndex: 0,
+  libraryPreviewThumbnailScrollTop: 0,
+  libraryPreviewMetadataScrollTop: 0,
 
   activeRightPanel: Panel.Adjustments,
   renderedRightPanel: Panel.Adjustments,

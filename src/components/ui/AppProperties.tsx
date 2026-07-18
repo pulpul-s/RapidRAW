@@ -1,6 +1,7 @@
 import { ExportPreset } from './ExportImportProperties';
 import { Adjustments, CopyPasteSettings } from '../../utils/adjustments';
 import { ToolType } from '../panel/right/Masks';
+import type { LoupeRenderArea } from '../../utils/loupeRenderArea';
 
 export const GLOBAL_KEYS = [
   ' ',
@@ -41,6 +42,7 @@ export enum Invokes {
   ClearAllSidecars = 'clear_all_sidecars',
   ClearAiTags = 'clear_ai_tags',
   ClearAllTags = 'clear_all_tags',
+  ClearLoupeCaches = 'clear_loupe_caches',
   ClearThumbnailCache = 'clear_thumbnail_cache',
   CopyFiles = 'copy_files',
   CreateFolder = 'create_folder',
@@ -55,6 +57,9 @@ export enum Invokes {
   GenerateAiSkyMask = 'generate_ai_sky_mask',
   GenerateAiSubjectMask = 'generate_ai_subject_mask',
   GenerateFullscreenPreview = 'generate_fullscreen_preview',
+  GenerateLoupeTile = 'generate_loupe_tile',
+  GenerateLibraryPreviewForPath = 'generate_library_preview_for_path',
+  SetActiveLoupePreviewPaths = 'set_active_loupe_preview_paths',
   GeneratePreviewForPath = 'generate_preview_for_path',
   GenerateMaskOverlay = 'generate_mask_overlay',
   GeneratePresetPreview = 'generate_preset_preview',
@@ -161,6 +166,19 @@ export enum ThumbnailAspectRatio {
   Contain = 'contain',
 }
 
+export enum LibraryPreviewThumbnailStyle {
+  BelowFilename = 'below_filename',
+  NameOverImage = 'name_over_image',
+  Hidden = 'hidden',
+  List = 'list',
+}
+
+export enum LibraryPreviewDetailsMode {
+  Always = 'always',
+  Hover = 'hover',
+  Never = 'never',
+}
+
 export interface AppSettings {
   aiConnectorAddress?: string;
   aiProvider?: string;
@@ -171,6 +189,7 @@ export interface AppSettings {
   highResZoomMultiplier?: number;
   enableLivePreviews?: boolean;
   livePreviewQuality?: string;
+  loupeRenderArea?: LoupeRenderArea;
   enableAiTagging?: boolean;
   aiTagCount?: number;
   customAiTags?: string[];
@@ -183,6 +202,14 @@ export interface AppSettings {
   theme: Theme;
   thumbnailSize?: ThumbnailSize;
   thumbnailAspectRatio?: ThumbnailAspectRatio;
+  libraryPreviewRightPanelWidth?: number;
+  libraryPreviewMetadataHeight?: number;
+  libraryPreviewThumbnailsPerRow?: number;
+  libraryPreviewPageSize?: number;
+  libraryPreviewThumbnailAspectRatio?: ThumbnailAspectRatio;
+  libraryPreviewExifOverlay?: ExifOverlay;
+  libraryPreviewThumbnailStyle?: LibraryPreviewThumbnailStyle;
+  libraryPreviewDetailsMode?: LibraryPreviewDetailsMode;
   uiVisibility?: UiVisibility;
   adjustmentVisibility?: { [key: string]: boolean };
   rawHighlightCompression?: number;
@@ -226,6 +253,11 @@ export interface BrushSettings {
 export enum LibraryViewMode {
   Flat = 'flat',
   Recursive = 'recursive',
+}
+
+export enum LibraryLayoutMode {
+  Grid = 'grid',
+  Preview = 'preview',
 }
 
 export const EditedStatus = {
@@ -334,6 +366,7 @@ export interface TransformState {
 export interface UiVisibility {
   folderTree: boolean;
   filmstrip: boolean;
+  libraryPreviewPanel?: boolean;
 }
 
 export interface WaveformData {

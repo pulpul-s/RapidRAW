@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useEditorStore } from '../store/useEditorStore';
 import { useUIStore } from '../store/useUIStore';
-import { Invokes, ImageFile, AlbumItem, Album, AlbumGroup } from '../components/ui/AppProperties';
+import { Invokes, ImageFile, AlbumItem, Album, AlbumGroup, LibraryLayoutMode } from '../components/ui/AppProperties';
 import { globalImageCache } from '../utils/ImageLRUCache';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { computeSortedLibrary } from './useSortedLibrary';
@@ -29,6 +29,17 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
       return { imageRatings: newRatings };
     });
 
+    const uiState = useUIStore.getState();
+    if (uiState.quickPreviewMode && selectedImage?.path && pathsToRate.includes(selectedImage.path)) {
+      uiState.setUI((state) => ({
+        quickPreviewMetadataOverlay: {
+          path: selectedImage.path,
+          rating: finalRating,
+          sequence: (state.quickPreviewMetadataOverlay?.sequence || 0) + 1,
+        },
+      }));
+    }
+
     invoke(Invokes.SetRatingForPaths, { paths: pathsToRate, rating: finalRating }).catch((err) => {
       console.error(err);
       toast.error(`Failed to apply rating: ${err}`);
@@ -43,7 +54,8 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
       paths || (multiSelectedPaths.length > 0 ? multiSelectedPaths : selectedImage ? [selectedImage.path] : []);
     if (pathsToUpdate.length === 0) return;
 
-    const primaryPath = selectedImage?.path || libraryActivePath;
+    const isPreviewMode = !selectedImage && useUIStore.getState().libraryLayoutMode === LibraryLayoutMode.Preview;
+    const primaryPath = (isPreviewMode ? paths?.[0] : undefined) || selectedImage?.path || libraryActivePath;
     const primaryImage = imageList.find((img: ImageFile) => img.path === primaryPath);
     let currentColor = null;
     if (primaryImage && primaryImage.tags) {
@@ -64,6 +76,17 @@ export function useLibraryActions(handleImageSelect?: (path: string) => void) {
           return image;
         }),
       }));
+
+      const uiState = useUIStore.getState();
+      if (uiState.quickPreviewMode && selectedImage?.path && pathsToUpdate.includes(selectedImage.path)) {
+        uiState.setUI((state) => ({
+          quickPreviewMetadataOverlay: {
+            path: selectedImage.path,
+            rating: useLibraryStore.getState().imageRatings[selectedImage.path] || 0,
+            sequence: (state.quickPreviewMetadataOverlay?.sequence || 0) + 1,
+          },
+        }));
+      }
     } catch (err) {
       toast.error(`Failed to set color label: ${err}`);
     }
