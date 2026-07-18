@@ -8,7 +8,7 @@ import debounce from 'lodash.debounce';
 
 import { ImageDimensions, useImageRenderSize } from '../../hooks/useImageRenderSize';
 import { Adjustments, AiPatch, MaskContainer } from '../../utils/adjustments';
-import { calculateCenteredCrop } from '../../utils/cropUtils';
+import { calculateCenteredCrop, rotateCropCenter } from '../../utils/cropUtils';
 import EditorToolbar from './editor/EditorToolbar';
 import ImageCanvas from './editor/ImageCanvas';
 import { Mask, SubMask } from './right/Masks';
@@ -1492,17 +1492,26 @@ export default function Editor({ onBackToLibrary, onContextMenu, transformWrappe
           effectiveRotation,
         );
       } else {
-        if (!checkCropValid(currentAdjCrop, W, H, effectiveRotation)) {
+        const referenceRotation = prevCropParams.current?.rotation ?? rotation;
+        const rotationDelta = effectiveRotation - referenceRotation;
+        const followedCrop =
+          rotationChanged && rotationDelta !== 0
+            ? rotateCropCenter(currentAdjCrop, W, H, rotationDelta)
+            : currentAdjCrop;
+
+        if (checkCropValid(followedCrop, W, H, effectiveRotation)) {
+          nextPixelCrop = followedCrop;
+        } else {
           let low = 0.1;
           let high = 1.0;
-          let bestCrop = currentAdjCrop;
+          let bestCrop = followedCrop;
 
           for (let i = 0; i < 10; i++) {
             let mid = (low + high) / 2;
-            let cx = currentAdjCrop.x + currentAdjCrop.width / 2;
-            let cy = currentAdjCrop.y + currentAdjCrop.height / 2;
-            let nw = currentAdjCrop.width * mid;
-            let nh = currentAdjCrop.height * mid;
+            let cx = followedCrop.x + followedCrop.width / 2;
+            let cy = followedCrop.y + followedCrop.height / 2;
+            let nw = followedCrop.width * mid;
+            let nh = followedCrop.height * mid;
             let testCrop = {
               unit: 'px' as const,
               x: cx - nw / 2,
